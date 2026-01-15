@@ -1,0 +1,15 @@
+fastapi==0.110.2
+uvicorn==0.29.0
+python-multipart==0.0.9
+httpx==0.27.0
+pytest==8.2.1
+alembic==1.13.1
+sqlalchemy[asyncio]==2.0.30
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-dotenv==1.0.1
+flask_cors==4.0.0
+structlog==24.1.0
+redis==5.0.4
+# Pin all dependencies for reproducible builds
+# Remove unused or duplicate packages before production

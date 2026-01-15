@@ -1,0 +1,18 @@
+.info-box {
+  background: #f7f7fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(30,64,175,0.04);
+}
+.info-box-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #1e40af;
+}
+.info-box-text {
+  font-size: 1rem;
+  color: #333;
+}

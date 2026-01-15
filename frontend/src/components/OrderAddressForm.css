@@ -1,0 +1,17 @@
+.order-address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+.order-address-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+}
+.order-address-form input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 4px;
+}

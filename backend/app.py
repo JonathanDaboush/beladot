@@ -1,0 +1,952 @@
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from backend.persistance.async_base import AsyncSessionLocal
+from backend.services import customerAssistanceServices, employeeServices, shippingServices
+from backend.services.managementServices import ManagementServices
+from backend.persistance.async_base import AsyncSessionLocal
+
+# Dependency to get DB session (for ManagementServices)
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+from backend.model.domain_event import DomainEventType, DomainEvent
+from backend.services.financeServices import FinanceService
+
+async def get_manager_services():
+    async with AsyncSessionLocal() as db:
+        return managerServices.ManagerService(db)
+# Minimal require_identity implementation for tests (replace with real one if available)
+
+
+# --- Imports ---
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+import uuid
+import time
+from dotenv import load_dotenv
+load_dotenv()
+from backend.config import settings
+from backend.structured_logging import logger, log_request_start, log_request_end
+from backend.persistance.async_base import AsyncSessionLocal
+from backend.model.domain_event import DomainEventType, DomainEvent
+from backend.services.financeServices import FinanceService
+from backend.services import customerAssistanceServices, employeeServices, shippingServices, customerServices, financeServices, managerServices, sellerServices
+from backend.services.managementServices import ManagementServices
+
+# --- Utility: require_identity ---
+def require_identity(request: Request):
+    try:
+        role = request.headers.get('X-Auth-Role')
+        user_id = request.headers.get('X-Auth-Id')
+        identity = {'role': role, 'id': user_id}
+        if role == 'seller':
+            identity['seller_id'] = request.headers.get('X-Auth-Seller-Id')
+        elif role == 'employee':
+            identity['employee_id'] = request.headers.get('X-Auth-Employee-Id')
+            identity['department_id'] = request.headers.get('X-Auth-Department-Id')
+        elif role == 'user':
+            identity['user_id'] = user_id
+        if not role or not user_id:
+            return JSONResponse({'detail': 'Unauthorized'}, status_code=401)
+        request.state.identity = identity
+        return None
+    except Exception:
+        return JSONResponse({'detail': 'Unauthorized'}, status_code=401)
+
+# --- Dependency Injection ---
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+
+async def get_management_services(db=Depends(get_db)):
+    return ManagementServices(db)
+
+async def get_finance_service(db=Depends(get_db)):
+    return FinanceService(db)
+
+# --- Middleware Classes ---
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        start = time.time()
+        await log_request_start(request)
+        response = await call_next(request)
+        latency = time.time() - start
+        await log_request_end(request, response.status_code, latency)
+        return response
+
+# --- Config Validation ---
+def validate_config():
+    required = ["DATABASE_URL", "SECRET_KEY", "LOG_LEVEL"]
+    missing = [k for k in required if not getattr(settings, k, None)]
+    if missing:
+        raise RuntimeError(f"Missing required config: {', '.join(missing)}")
+validate_config()
+
+# --- App Factory ---
+def create_app():
+    middlewares = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        ),
+        Middleware(RequestIDMiddleware),
+        Middleware(LoggingMiddleware),
+    ]
+    app = FastAPI(middleware=middlewares)
+
+    # Security headers middleware
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "same-origin"
+        return response
+
+    # Identity extraction middleware for role enforcement
+    @app.middleware("http")
+    async def add_identity_to_request(request: Request, call_next):
+        role = request.headers.get('X-Auth-Role')
+        user_id = request.headers.get('X-Auth-Id')
+        identity = {'role': role, 'id': user_id}
+        if role == 'seller':
+            identity['seller_id'] = request.headers.get('X-Auth-Seller-Id')
+        elif role == 'employee':
+            identity['employee_id'] = request.headers.get('X-Auth-Employee-Id')
+            identity['department_id'] = request.headers.get('X-Auth-Department-Id')
+        elif role == 'user':
+            identity['user_id'] = user_id
+        request.state.identity = identity
+        response = await call_next(request)
+        return response
+
+    # --- Include Routers ---
+    from backend.routes_finance import router as finance_router
+    from backend.routes_employee import router as employee_router
+    from backend.routes_seller import router as seller_router
+    from backend.routes_customer import router as customer_router
+    from backend.routes_assistance import router as assistance_router
+    from backend.routes_shipping import router as shipping_router
+    from backend.routes_uploads import router as uploads_router
+
+    app.include_router(finance_router)
+    app.include_router(employee_router)
+    app.include_router(seller_router)
+    app.include_router(customer_router)
+    app.include_router(assistance_router)
+    app.include_router(shipping_router)
+    app.include_router(uploads_router)
+
+    return app
+
+
+app = create_app()
+
+# --- Restore missing endpoint ---
+@app.post('/api/finance/issues')
+async def api_finance_create_issue(request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    data = await request.json()
+    required = ['employee_id', 'description', 'cost', 'date', 'status']
+    if not all(k in data for k in required):
+        raise HTTPException(status_code=400, detail='Missing required fields')
+    financeServices = await get_finance_service()
+    issue = await financeServices.create_issue(
+        data['employee_id'], data['description'], data['cost'], data['date'], data['status']
+    )
+    return JSONResponse({'item': issue.incident_id})
+
+
+@app.put('/api/finance/issues/{issue_id}')
+async def api_finance_update_issue(issue_id: int, request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    data = await request.json()
+    financeServices = await get_finance_service()
+    result = await financeServices.update_issue(issue_id, **data)
+    if not result:
+        raise HTTPException(status_code=404, detail='Issue not found or deleted')
+    return JSONResponse({'result': True})
+
+
+@app.delete('/api/finance/issues/{issue_id}')
+async def api_finance_delete_issue(issue_id: int, request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    data = await request.json()
+    confirm = data.get('confirm', False)
+    financeServices = await get_finance_service()
+    result = await financeServices.delete_issue(issue_id, confirm=confirm)
+    if not result:
+        raise HTTPException(status_code=400, detail='Confirmation required or issue not found')
+    return JSONResponse({'result': True})
+
+@app.get('/api/finance/reimbursements')
+async def api_finance_reimbursements_catalog(request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    result = await financeServices.get_reimbursements_catalog()
+    return JSONResponse({'items': result})
+
+@app.get('/api/finance/reimbursements/{reimbursement_id}')
+async def api_finance_reimbursement_detail(reimbursement_id: int, request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    result = await financeServices.get_reimbursement_detail(reimbursement_id)
+    if not result:
+        raise HTTPException(status_code=404, detail='Reimbursement not found')
+    return JSONResponse({'item': result})
+
+@app.put('/api/finance/reimbursements/{reimbursement_id}')
+async def api_finance_update_reimbursement(reimbursement_id: int, request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    data = await request.json()
+    result = await financeServices.update_reimbursement(reimbursement_id, **data)
+    if not result:
+        raise HTTPException(status_code=404, detail='Reimbursement not found or deleted')
+    return JSONResponse({'result': True})
+
+@app.delete('/api/finance/reimbursements/{reimbursement_id}')
+async def api_finance_delete_reimbursement(reimbursement_id: int, request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    data = await request.json()
+    confirm = data.get('confirm', False)
+    result = await financeServices.delete_reimbursement(reimbursement_id, confirm=confirm)
+    if not result:
+        raise HTTPException(status_code=400, detail='Confirmation required or reimbursement not found')
+    return JSONResponse({'result': True})
+# --- Preview Endpoint ---
+
+@app.post('/api/preview')
+async def preview_consequences(request: Request):
+    data = await request.json()
+    event_type = data.get('event_type')
+    entity_id = data.get('entity_id')
+    actor = data.get('actor')
+    payload = data.get('payload', {})
+    # Construct domain event
+    # Map event_type string to enum value (case-insensitive, allow both 'REFUND_APPROVED' and 'refund_approved')
+    try:
+        event_type_enum = DomainEventType(event_type)
+    except ValueError:
+        # Try lowercased value
+        try:
+            event_type_enum = DomainEventType[event_type.upper()]
+        except (KeyError, ValueError):
+            # Try value as lowercased string
+            event_type_enum = DomainEventType(event_type.lower())
+    event = DomainEvent(event_type=event_type_enum, entity_id=entity_id, actor=actor, payload=payload)
+    # Dry-run: call handler but do not commit
+    # For demo, only refund events
+
+    # ------------------------------------------------------------------------------
+    identity = get_identity(request)
+    if not identity.get('role'):
+        raise HTTPException(status_code=401, detail='Unauthorized')
+    return None
+
+@app.route('/api/reimbursement_details', methods=['GET'])
+async def ctrl_get_reimbursement_details(request: Request):
+    fail = require_identity(request)
+    if fail: return fail
+    reimbursement_id = request.query_params.get('reimbursement_id')
+    # db should be injected by dependency, not defaulted to None
+    # result = await employeeServices.get_reimbursement_details(reimbursement_id)
+    raise HTTPException(status_code=500, detail='Not implemented: db context required')
+
+
+
+# ...existing code...
+
+# Remove top-level initialization; use dependency injection instead
+# --- Manager Service Endpoints ---
+
+
+# --- Management Service Endpoints ---
+@app.route('/api/employee_components', methods=['GET'])
+async def ctrl_get_all_employee_components(management_services=Depends(get_management_services)):
+    result = await management_services.get_all_employee_components()
+    return JSONResponse({'result': result})
+
+# New: Get employee components for a specific employee (department-based)
+@app.route('/api/employee_components/for_employee', methods=['GET'])
+async def ctrl_get_employee_components_for_employee(request: Request, management_services=Depends(get_management_services)):
+    identity = get_identity(request)
+    if identity.get('role') != 'employee':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    department_id = identity.get('department_id')
+    if not department_id:
+        raise HTTPException(status_code=401, detail='No department context')
+    result = await management_services.get_employee_components_for_department(department_id)
+    return JSONResponse({'result': result})
+
+@app.route('/api/employee_component/<int:id>', methods=['GET'])
+async def ctrl_get_employee_component(request: Request, id, management_services=Depends(get_management_services)):
+    result = await management_services.get_employee_component(id)
+    return JSONResponse({'result': result})
+
+@app.route('/api/employee_component', methods=['POST'])
+async def ctrl_create_employee_component(request: Request, management_services=Depends(get_management_services)):
+    identity = get_identity(request)
+    if identity.get('role') != 'employee':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    department_id = identity.get('department_id')
+    if not department_id:
+        raise HTTPException(status_code=401, detail='No department context')
+    result = await management_services.create_employee_component(data['img_url'], data['description'], department_id)
+    return JSONResponse({'result': result})
+
+@app.route('/api/employee_component/<int:id>', methods=['PUT'])
+async def ctrl_update_employee_component(request: Request, id, management_services=Depends(get_management_services)):
+    identity = get_identity(request)
+    data = await request.json()
+    # Prevent managers from using privileges on themselves
+    if identity.get('role') == 'manager' and int(identity.get('id', -1)) == int(id):
+        raise HTTPException(status_code=403, detail='Managers cannot use managerial privileges on themselves.')
+    result = await management_services.update_employee_component(id, **data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/employee_component/<int:id>', methods=['DELETE'])
+async def ctrl_delete_employee_component(request: Request, id, management_services=Depends(get_management_services)):
+    identity = get_identity(request)
+    # Prevent managers from using privileges on themselves
+    if identity.get('role') == 'manager' and int(identity.get('id', -1)) == int(id):
+        raise HTTPException(status_code=403, detail='Managers cannot use managerial privileges on themselves.')
+    result = await management_services.delete_employee_component(id)
+    return JSONResponse({'result': result})
+
+@app.route('/api/seller_components', methods=['GET'])
+async def ctrl_get_all_seller_components(management_services=Depends(get_management_services)):
+    result = await management_services.get_all_seller_components()
+    return JSONResponse({'result': result})
+
+@app.route('/api/seller_component/<int:id>', methods=['GET'])
+async def ctrl_get_seller_component(id, management_services=Depends(get_management_services)):
+    result = await management_services.get_seller_component(id)
+    return JSONResponse({'result': result})
+
+@app.route('/api/seller_component', methods=['POST'])
+async def ctrl_create_seller_component(request: Request, management_services=Depends(get_management_services)):
+    data = await request.json()
+    result = await management_services.create_seller_component(data['img_url'], data['description'])
+    return JSONResponse({'result': result})
+
+@app.route('/api/seller_component/<int:id>', methods=['PUT'])
+async def ctrl_update_seller_component(request: Request, id, management_services=Depends(get_management_services)):
+    data = await request.json()
+    result = await management_services.update_seller_component(id, **data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/seller_component/<int:id>', methods=['DELETE'])
+async def ctrl_delete_seller_component(id, management_services=Depends(get_management_services)):
+    result = await management_services.delete_seller_component(id)
+    return JSONResponse({'result': result})
+
+
+
+# --- FastAPI Authentication Dependency ---
+from fastapi import Depends
+
+def get_identity(request: Request):
+    role = request.headers.get('X-Auth-Role')
+    user_id = request.headers.get('X-Auth-Id')
+    identity = {'role': role, 'id': user_id}
+    if role == 'seller':
+        identity['seller_id'] = request.headers.get('X-Auth-Seller-Id')
+    elif role == 'employee':
+        identity['employee_id'] = request.headers.get('X-Auth-Employee-Id')
+        identity['department_id'] = request.headers.get('X-Auth-Department-Id')
+    elif role == 'user':
+        identity['user_id'] = user_id
+    if not role or not user_id:
+        raise HTTPException(status_code=401, detail='Unauthorized')
+    return identity
+
+# --- Seller Service Endpoints ---
+@app.route('/api/create_product', methods=['POST'])
+async def ctrl_create_product(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    result = await sellerServices.create_product(data)
+    return JSONResponse({'result': result})
+@app.route('/api/disable_user_account', methods=['POST'])
+async def ctrl_disable_user_account(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'user':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    result, error = await customerServices.deactivate_user_account(identity.get('user_id'))
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return JSONResponse({'success': True})
+@app.route('/api/edit_product', methods=['PUT'])
+async def ctrl_edit_product(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    result = await sellerServices.edit_product(data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/delete_product', methods=['DELETE'])
+async def ctrl_delete_product(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    result = await sellerServices.delete_product(data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_product', methods=['GET'])
+async def ctrl_get_product(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = dict(request.query_params)
+    result = await sellerServices.get_product(data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_all_products', methods=['GET'])
+async def ctrl_get_all_products(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    result = await sellerServices.get_all_products(identity.get('seller_id'))
+    return JSONResponse({'result': result})
+
+@app.route('/api/respond_to_comment', methods=['PUT'])
+async def ctrl_respond_to_comment(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    data['seller_id'] = identity.get('seller_id')
+    result = await sellerServices.respond_to_comment(data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/analyze_orders_for_product', methods=['GET'])
+async def ctrl_analyze_orders_for_product(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = dict(request.query_params)
+    data['seller_id'] = identity.get('seller_id')
+    result = await sellerServices.analyze_orders_for_product(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/remove_variant', methods=['DELETE'])
+async def ctrl_remove_variant(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = await request.json()
+    data['seller_id'] = identity.get('seller_id')
+    result = await sellerServices.remove_variant(data.get('variant_id'), data.get('db'), identity.get('seller_id'))
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_seller_payout', methods=['GET'])
+async def ctrl_get_seller_payout(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = dict(request.query_params)
+    seller_id = identity.get('seller_id')
+    result = await sellerServices.get_seller_payout(seller_id, data.get('year'), data.get('month'), data.get('db'))
+    return JSONResponse({'result': result})
+
+@app.route('/api/search_products_for_seller', methods=['GET'])
+async def ctrl_search_products_for_seller(request: Request):
+    identity = get_identity(request)
+    if identity.get('role') != 'seller':
+        raise HTTPException(status_code=403, detail='Forbidden')
+    data = dict(request.query_params)
+    seller_id = identity.get('seller_id')
+    result = await sellerServices.search_products_for_seller(
+        seller_id, data.get('db'), data.get('keywords'),
+        data.get('category_id'), data.get('subcategory_id'),
+        data.get('min_price'), data.get('max_price')
+    )
+    return JSONResponse({'result': result})
+
+@app.route('/api/search_products_for_customer', methods=['GET'])
+async def ctrl_search_products_for_customer(request: Request):
+    data = dict(request.query_params)
+    result = await sellerServices.search_products_for_customer(
+        data.get('db'), data.get('keywords'),
+        data.get('category_id'), data.get('subcategory_id'),
+        data.get('min_price'), data.get('max_price')
+    )
+    return JSONResponse({'result': result})
+
+# --- Customer Service Endpoints ---
+@app.route('/api/get_cart_items', methods=['GET'])
+async def ctrl_get_cart_items(request: Request):
+    data = dict(request.query_params)
+    # Provide a dummy db argument for test context if not present
+    if 'db' not in data:
+        data['db'] = None
+    # Extract user_id from header or query for test context
+    user_id = request.headers.get('X-Auth-Id') or data.get('user_id')
+    if user_id is not None:
+        try:
+            user_id = int(user_id)
+        except Exception:
+            pass
+    data['user_id'] = user_id
+    result = customerServices.get_cart_items(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_wishlist_items', methods=['GET'])
+async def ctrl_get_wishlist_items(request: Request):
+    data = dict(request.query_params)
+    result = await customerServices.get_wishlist_items(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/add_item_to_cart', methods=['POST'])
+async def ctrl_add_item_to_cart(request: Request):
+    data = await request.json()
+    # Validate required arguments for add_item_to_cart
+    required = ['product_id', 'quantity', 'db']
+    missing = [k for k in required if k not in data]
+    if missing:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing)}")
+    result = await customerServices.add_item_to_cart(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/add_item_to_wishlist', methods=['POST'])
+async def ctrl_add_item_to_wishlist(request: Request):
+    data = await request.json()
+    result = await customerServices.add_item_to_wishlist(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_cart_item_quantity', methods=['PUT'])
+async def ctrl_edit_cart_item_quantity(request: Request):
+    data = await request.json()
+    result = await customerServices.edit_cart_item_quantity(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_wishlist_item_quantity', methods=['PUT'])
+async def ctrl_edit_wishlist_item_quantity(request: Request):
+    data = await request.json()
+    result = await customerServices.edit_wishlist_item_quantity(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/remove_cart_item', methods=['DELETE'])
+async def ctrl_remove_cart_item(request: Request):
+    data = await request.json()
+    result = await customerServices.remove_cart_item(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/remove_wishlist_item', methods=['DELETE'])
+async def ctrl_remove_wishlist_item(request: Request):
+    data = await request.json()
+    result = await customerServices.remove_wishlist_item(**data)
+    return JSONResponse({'result': result})
+
+# --- Manager Service Endpoints ---
+@app.route('/api/edit_employee_info', methods=['POST'])
+async def ctrl_edit_employee_info(request: Request):
+    data = await request.json()
+    managerServices = await get_manager_services()
+    edit_func = getattr(managerServices, 'edit_employee_info', None)
+    if edit_func is not None and callable(edit_func):
+        import inspect
+        if inspect.iscoroutinefunction(edit_func):
+            result = await edit_func(**data)
+        else:
+            result = edit_func(**data)
+    else:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail='edit_employee_info not implemented')
+    # Serialize SQLAlchemy object to dict for JSON
+    def to_dict(obj):
+        if obj is None:
+            return None
+        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+    return JSONResponse({'result': to_dict(result)})
+
+@app.route('/api/accept_sickday_request', methods=['POST'])
+async def ctrl_accept_sickday_request(request: Request):
+    data = await request.json()
+    result = managerServices.accept_sickday_request(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/accept_pto_request', methods=['POST'])
+async def ctrl_accept_pto_request(request: Request):
+    data = await request.json()
+    result = managerServices.accept_pto_request(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/sign_employee_up_for_shift', methods=['POST'])
+async def ctrl_sign_employee_up_for_shift(request: Request):
+    data = await request.json()
+    result = managerServices.sign_employee_up_for_shift(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/create_incident_report', methods=['POST'])
+async def ctrl_create_incident_report(request: Request):
+    data = await request.json()
+    result = managerServices.create_incident_report(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_employee_shift', methods=['POST'])
+async def ctrl_edit_employee_shift(request: Request):
+    data = await request.json()
+    result = managerServices.edit_employee_shift(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_sickday_info', methods=['POST'])
+async def ctrl_edit_sickday_info(request: Request):
+    data = await request.json()
+    result = managerServices.edit_sickday_info(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_pto_info', methods=['POST'])
+async def ctrl_edit_pto_info(request: Request):
+    data = await request.json()
+    result = await managerServices.edit_pto_info(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_all_incident_reports', methods=['POST'])
+async def ctrl_get_all_incident_reports(request: Request):
+    data = await request.json()
+    result = await managerServices.get_all_incident_reports(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_incident_report', methods=['POST'])
+async def ctrl_get_incident_report(request: Request):
+    data = await request.json()
+    result = await managerServices.get_incident_report(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/delete_incident_report', methods=['POST'])
+async def ctrl_delete_incident_report(request: Request):
+    data = await request.json()
+    result = await managerServices.delete_incident_report(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_incident_report', methods=['POST'])
+async def ctrl_edit_incident_report(request: Request):
+    data = await request.json()
+    result = await managerServices.edit_incident_report(**data)
+    return JSONResponse({'result': result})
+
+# --- Employee Service Endpoints ---
+@app.route('/api/get_personal_monthly_schedule', methods=['GET'])
+async def ctrl_get_personal_monthly_schedule(request: Request):
+    data = dict(request.query_params)
+    result = await employeeServices.get_personal_monthly_schedule(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_monthly_schedule', methods=['GET'])
+async def ctrl_get_monthly_schedule(request: Request):
+    data = dict(request.query_params)
+    result = await employeeServices.get_monthly_schedule(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_sickdays', methods=['GET'])
+async def ctrl_get_sickdays(request: Request):
+    data = dict(request.query_params)
+    result = await employeeServices.get_sickdays(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/delete_sickday', methods=['DELETE'])
+async def ctrl_delete_sickday(request: Request):
+    data = await request.json()
+    result = await employeeServices.delete_sickday(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/update_sickday', methods=['PUT'])
+async def ctrl_update_sickday(request: Request):
+    data = await request.json()
+    result = await employeeServices.update_sickday(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/create_sickday', methods=['POST'])
+async def ctrl_create_sickday(request: Request):
+    data = await request.json()
+    result = await employeeServices.create_sickday(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_pto', methods=['GET'])
+async def ctrl_get_pto(request: Request):
+    data = dict(request.query_params)
+    result = await employeeServices.get_pto(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/delete_pto', methods=['DELETE'])
+async def ctrl_delete_pto(request: Request):
+    data = await request.json()
+    result = await employeeServices.delete_pto(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/update_pto', methods=['PUT'])
+async def ctrl_update_pto(request: Request):
+    data = await request.json()
+    result = await employeeServices.update_pto(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/create_pto', methods=['POST'])
+async def ctrl_create_pto(request: Request):
+    data = await request.json()
+    result = await employeeServices.create_pto(**data)
+    return JSONResponse({'result': result})
+
+
+from backend.services.employeeServices import EmployeeService
+
+
+
+
+@app.route('/api/book_shift', methods=['POST'])
+async def ctrl_book_shift(request: Request):
+    data = await request.json()
+    async with AsyncSessionLocal() as db:
+        employee_service = EmployeeService(db)
+        result = await employee_service.book_shift(**data)
+    import enum
+    def serialize(obj):
+        if hasattr(obj, '__table__'):
+            d = {}
+            for c in obj.__table__.columns:
+                val = getattr(obj, c.name)
+                if isinstance(val, enum.Enum):
+                    d[c.name] = val.value
+                else:
+                    d[c.name] = val
+            return d
+        return obj
+    # If result contains a shift, serialize it
+    if isinstance(result, dict) and 'shift' in result:
+        result = dict(result)
+        result['shift'] = serialize(result['shift'])
+    # Serialize result, including datetime fields
+    def serialize(obj):
+        if isinstance(obj, dict):
+            return {k: serialize(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple, set)):
+            return [serialize(i) for i in obj]
+        elif hasattr(obj, '__dict__'):
+            d = {}
+            for k, v in obj.__dict__.items():
+                if k.startswith('_sa_instance_state'):
+                    continue
+                d[k] = serialize(v)
+            return d
+        elif hasattr(obj, 'value'):
+            return obj.value
+        elif hasattr(obj, 'isoformat'):
+            try:
+                return obj.isoformat()
+            except Exception:
+                return str(obj)
+        return obj
+
+    return JSONResponse({'result': serialize(result)})
+
+@app.route('/api/create_reimbursement_claim', methods=['POST'])
+async def ctrl_create_reimbursement_claim(request: Request):
+    data = await request.json()
+    result = await employeeServices.create_reimbursement_claim(**data)
+    return JSONResponse({'result': result})
+
+# --- Finance Service Endpoints ---
+@app.route('/api/add_reimbursement_report', methods=['POST'])
+async def ctrl_add_reimbursement_report(request: Request):
+    data = await request.json()
+    result = await financeServices.add_reimbursement_report(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_reimbursement', methods=['POST'])
+async def ctrl_get_reimbursement(request: Request):
+    data = await request.json()
+    result = await financeServices.get_reimbursement(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_all_reimbursements', methods=['POST'])
+async def ctrl_get_all_reimbursements(request: Request):
+    data = await request.json()
+    result = await financeServices.get_all_reimbursements(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/delete_reimbursement', methods=['POST'])
+async def ctrl_delete_reimbursement(request: Request):
+    data = await request.json()
+    result = await financeServices.delete_reimbursement(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/update_reimbursement', methods=['POST'])
+async def ctrl_update_reimbursement(request: Request):
+    data = await request.json()
+    result = await financeServices.update_reimbursement(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/calculate_total_payment', methods=['POST'])
+async def ctrl_calculate_total_payment(request: Request):
+    data = await request.json()
+    result = await financeServices.calculate_total_payment(**data)
+    return JSONResponse({'result': result})
+
+# --- Shipping Service Endpoints ---
+@app.route('/api/get_shipment_event', methods=['POST'])
+async def ctrl_get_shipment_event(request: Request):
+    data = await request.json()
+    result = await shippingServices.get_shipment_event(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_shipment_issues', methods=['POST'])
+async def ctrl_edit_shipment_issues(request: Request):
+    data = await request.json()
+    result = await shippingServices.edit_shipment_issues(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_shipment_events', methods=['POST'])
+async def ctrl_edit_shipment_events(request: Request):
+    data = await request.json()
+    result = await shippingServices.edit_shipment_events(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/edit_shipment_items', methods=['POST'])
+async def ctrl_edit_shipment_items(request: Request):
+    data = await request.json()
+    result = await shippingServices.edit_shipment_items(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_shipment_details', methods=['POST'])
+async def ctrl_get_shipment_details(request: Request):
+    data = await request.json()
+    result = await shippingServices.get_shipment_details(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_shipments', methods=['POST'])
+async def ctrl_get_shipments(request: Request):
+    data = await request.json()
+    result = await shippingServices.get_shipments(**data)
+    return JSONResponse({'result': result})
+
+
+@app.route('/api/create_shipment', methods=['POST'])
+async def ctrl_create_shipment(request: Request):
+    data = await request.json()
+    data.pop('shipment_id', None)
+    if not data.get('shipment_status'):
+        data['shipment_status'] = 'created'
+    async with AsyncSessionLocal() as db:
+        result = await shippingServices.create_shipment(
+            order_id=data.get('order_id'),
+            db=db,
+            shipment_status=data.get('shipment_status'),
+            shipped_at=data.get('shipped_at'),
+            delivered_at=data.get('delivered_at')
+        )
+    # Serialize the result if it's a SQLAlchemy model
+    import enum
+    def serialize(obj):
+        if hasattr(obj, '__table__'):
+            d = {}
+            for c in obj.__table__.columns:
+                val = getattr(obj, c.name)
+                if isinstance(val, enum.Enum):
+                    d[c.name] = val.value
+                else:
+                    d[c.name] = val
+            return d
+        return obj
+    return JSONResponse({'result': serialize(result)})
+
+@app.route('/api/create_shipment_event', methods=['POST'])
+async def ctrl_create_shipment_event(request: Request):
+    data = await request.json()
+    result = await shippingServices.create_shipment_event(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/create_shipment_issue', methods=['POST'])
+async def ctrl_create_shipment_issue(request: Request):
+    data = await request.json()
+    result = await shippingServices.create_shipment_issue(**data)
+    return JSONResponse({'result': result})
+
+# --- Customer Assistance Service Endpoints ---
+@app.route('/api/send_customer_refund_status_email', methods=['POST'])
+async def ctrl_send_customer_refund_status_email(request: Request):
+    data = await request.json()
+    # Map test payload fields to service signature
+    result = customerAssistanceServices.send_customer_refund_status_email(
+        customer_email=data.get('email'),
+        customer_name=data.get('name', ''),
+        order_id=data.get('order_id', None),
+        refund_amount=data.get('refund_amount', None),
+        status=data.get('status'),
+        description=data.get('description', None)
+    )
+    return JSONResponse({'result': result})
+
+@app.route('/api/send_seller_broken_product_notification', methods=['POST'])
+async def ctrl_send_seller_broken_product_notification(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.send_seller_broken_product_notification(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_shipment_greivence_reports', methods=['POST'])
+async def ctrl_get_shipment_greivence_reports(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.get_shipment_greivence_reports(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/process_customer_complaint', methods=['POST'])
+async def ctrl_process_customer_complaint(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.process_customer_complaint(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_greivence_details', methods=['POST'])
+async def ctrl_get_greivence_details(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.get_greivence_details(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_specific_refund_request', methods=['POST'])
+async def ctrl_get_specific_refund_request(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.get_specific_refund_request(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/process_shipment_report', methods=['POST'])
+async def ctrl_process_shipment_report(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.process_shipment_report(**data)
+    return JSONResponse({'result': result})
+
+@app.route('/api/get_all_customer_refund_requests', methods=['POST'])
+async def ctrl_get_all_customer_refund_requests(request: Request):
+    data = await request.json()
+    result = await customerAssistanceServices.get_all_customer_refund_requests(**data)
+    return JSONResponse({'result': result})
+
+"""
+To run the app, use an ASGI server like:
+    uvicorn backend.app:app --reload
+"""

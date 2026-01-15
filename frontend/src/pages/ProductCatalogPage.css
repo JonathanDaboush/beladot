@@ -1,0 +1,32 @@
+.product-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.product-summary-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.product-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.product-summary-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.product-summary-category {
+  color: #666;
+  font-size: 0.95rem;
+}
+.product-summary-price {
+  color: #2a7;
+  font-weight: bold;
+}
+.product-summary-rating {
+  color: #f90;
+}

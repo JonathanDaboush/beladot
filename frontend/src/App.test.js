@@ -1,0 +1,50 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+/**
+ * Mock AuthContext
+ */
+jest.mock('./context/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    login: jest.fn(),
+    logout: jest.fn(),
+  }),
+}));
+
+/**
+ * Stable fetch mock
+ * MUST be beforeEach, not beforeAll
+ */
+beforeEach(() => {
+  global.fetch = jest.fn((url) =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve(
+          url === '/api/categories'
+            ? { categories: [] }
+            : {}
+        ),
+    })
+  );
+});
+
+/**
+ * Clean teardown to avoid leaked handles
+ */
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+/**
+ * Test
+ */
+test('renders learn react link', async () => {
+  render(<App />);
+
+  const linkElement = await screen.findByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});

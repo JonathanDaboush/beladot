@@ -1,0 +1,52 @@
+.employee-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.employee-sidebar {
+  width: 220px;
+  background: #f7f7fa;
+  border-right: 1px solid #e0e0e0;
+  padding: 2rem 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.employee-sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.employee-sidebar nav li {
+  margin-bottom: 1rem;
+}
+
+.employee-sidebar nav a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  display: block;
+  transition: background 0.2s;
+}
+
+.employee-sidebar nav a.active,
+.employee-sidebar nav a:hover {
+  background: #e0e7ff;
+  color: #1e40af;
+}
+
+.sidebar-info {
+  font-size: 0.95rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.employee-main {
+  flex: 1;
+  padding: 2rem;
+  background: #fff;
+}

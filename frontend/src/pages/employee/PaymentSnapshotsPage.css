@@ -1,0 +1,23 @@
+.payment-snapshots-page {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.snapshots-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.snapshots-table th,
+.snapshots-table td {
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+.snapshots-table th {
+  background: #f7f7fa;
+}

@@ -1,0 +1,51 @@
+.reviews-section {
+  margin-top: 2rem;
+}
+.review-card {
+  background: #faf6f2;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #eee;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+.review-author {
+  font-weight: 600;
+  color: #b85c38;
+}
+.review-content {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+.seller-response {
+  background: #fff;
+  border-left: 4px solid #b85c38;
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+}
+.response-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  color: #888;
+  margin-bottom: 0.3rem;
+}
+.response-author {
+  font-weight: 600;
+  color: #b85c38;
+}
+.response-content {
+  font-size: 1rem;
+}
+.reviews-empty {
+  text-align: center;
+  margin: 2rem 0;
+  color: #888;
+}

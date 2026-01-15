@@ -1,0 +1,25 @@
+.reimbursement-list-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.reimbursement-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+}
+.reimbursement-table th,
+.reimbursement-table td {
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+.reimbursement-table th {
+  background: #f7f7fa;
+}
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.clickable-row:hover {
+  background: #e0e7ff;
+}

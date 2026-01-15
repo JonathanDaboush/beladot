@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Product Return Required</title>
+</head>
+<body>
+    <h2>Product Return Notification</h2>
+    <p>Dear {{ seller_name }},</p>
+    <p>We have received a report that the product <strong>{{ product_name }}</strong>{% if variant_name %} (Variant: <strong>{{ variant_name }}</strong>){% endif %} from order <strong>{{ order_id }}</strong> was found broken before arrival to shipment.</p>
+    <p>Please arrange to bring the required product{% if variant_name %} (variant){% endif %} in the demanded quantity (<strong>{{ quantity }}</strong>) to the shipment center as soon as possible.</p>
+    <p>If you have any questions, please contact our support team.</p>
+    <br>
+    <p>Thank you for your cooperation!</p>
+    <p>Best regards,<br>Divina Popina Team</p>
+</body>
+</html>

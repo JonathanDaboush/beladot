@@ -1,0 +1,10 @@
+<html>
+  <body>
+    <h2>Reimbursement Claim Submitted</h2>
+    <p>Amount Requested: <b>{{ amount_requested }}</b></p>
+    <p>Description: {{ description }}</p>
+    {% if paystub_url %}
+      <p>Paystub: <a href="{{ paystub_url }}">{{ paystub_url }}</a></p>
+    {% endif %}
+  </body>
+</html>
