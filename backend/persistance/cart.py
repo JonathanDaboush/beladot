@@ -8,7 +8,7 @@
 # update times. Relationships to cart items are defined in cart_item.py.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -25,7 +25,8 @@ class Cart(Base):
         # Relationships to cart items are defined in cart_item.py.
     """
     __tablename__ = 'cart'
-    cart_id = Column(BigInteger, primary_key=True)
+    # Use Integer for SQLite autoincrement primary key behavior
+    cart_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey('user.user_id'))
     created_at = Column(DateTime)
     updated_at = Column(DateTime)

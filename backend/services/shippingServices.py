@@ -114,33 +114,28 @@ async def create_shipment_issue(db: AsyncSession, shipment_id: int, shipment_emp
         appointted_to=appointted_to
     )
     return await shipment_issue_repo.save(shipment_issue)
-        # employee_id should be passed explicitly as a parameter
+    
+async def create_shipment(db: AsyncSession, order_id: int, shipment_status, shipped_at: datetime | None = None, delivered_at: datetime | None = None, employee_id: int | None = None):
     """
     Create a shipment using order_id and other necessary info (except shipment_id).
     Args:
+        db: SQLAlchemy async session.
         order_id: The ID of the order to ship.
-        db: SQLAlchemy session (request-scoped, not global; managed by caller).
-        shipment_status: Status of the shipment (e.g., 'pending', 'shipped').
+        shipment_status: Status of the shipment (expects CREATED for new shipments).
         shipped_at: Optional datetime when shipped.
         delivered_at: Optional datetime when delivered.
+        employee_id: Optional creator/owner context (not persisted here).
     Returns:
         The created Shipment object.
     """
     from backend.models.model.enums import ShipmentStatus
     shipment_repo = ShipmentRepository(db)
-    from datetime import datetime
-    created_at = datetime.utcnow()
-    updated_at = created_at
-    # Only allow creation in CREATED state
-    # Accept both enum and string for shipment_status
-    if isinstance(shipment_status, str):
-        status_val = shipment_status.lower()
-    else:
-        status_val = shipment_status.value.lower()
+    # Only allow creation in CREATED state; accept enum or string
+    status_val = shipment_status.value.lower() if hasattr(shipment_status, 'value') else str(shipment_status).lower()
     if status_val != ShipmentStatus.CREATED.value:
         raise Exception('Shipment can only be created in CREATED state')
     shipment = Shipment(
-        shipment_id=None,  # PK is auto-generated
+        shipment_id=None,
         order_id=order_id,
         shipment_status=shipment_status
     )
@@ -148,22 +143,26 @@ async def create_shipment_issue(db: AsyncSession, shipment_id: int, shipment_emp
 
     # Create ShipmentItems for each OrderItem in the order
     order_item_repo = OrderItemRepository(db)
-    shipment_item_repo = ShipmentItemRepository(db)
     order_items = await order_item_repo.get_by_order_id(order_id)
-    shipment_items = [
-        ShipmentItem(
+    for item in order_items:
+        db.add(ShipmentItem(
             shipment_item_id=None,
             shipment_id=shipment.shipment_id,
             product_id=item.product_id,
             variant_id=item.variant_id,
             quantity=item.quantity,
             subtotal=item.subtotal
-        ) for item in order_items
-    ]
-    for item in shipment_items:
-        db.add(item)
+        ))
     await db.commit()
-    return shipment
+    # Build response matching ShipmentResponse schema
+    status_str = shipment.shipment_status.value if hasattr(shipment.shipment_status, 'value') else str(shipment.shipment_status)
+    return {
+        'id': shipment.shipment_id,
+        'order_id': shipment.order_id,
+        'shipment_status': status_str,
+        'shipped_at': None if shipped_at is None else str(shipped_at),
+        'delivered_at': None if delivered_at is None else str(delivered_at),
+    }
 async def get_shipments(shipment_id: int, db: AsyncSession):
     """
     Args:

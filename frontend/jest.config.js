@@ -1,6 +1,16 @@
 module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
+  collectCoverage: true,
+  coverageDirectory: '<rootDir>/build/coverage',
+  coverageReporters: ['text', 'lcov'],
+  collectCoverageFrom: [
+    '<rootDir>/src/**/*.{js,jsx}',
+    '!<rootDir>/src/index.js',
+    '!<rootDir>/src/reportWebVitals.js',
+    '!<rootDir>/src/pages/**',
+  ],
+  coveragePathIgnorePatterns: ['<rootDir>/src/pages/'],
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
@@ -13,7 +23,7 @@ module.exports = {
     '^\.\./context/AuthContext.js$': '<rootDir>/src/context/AuthContext.js',
     '^../context/AuthContext$': '<rootDir>/src/context/AuthContext.js',
     '^../context/AuthContext.js$': '<rootDir>/src/context/AuthContext.js',
-    '^\.\./context/AuthContext$': '<rootDir>/src/context/AuthContext.js',
-    '^\.\./context/AuthContext.js$': '<rootDir>/src/context/AuthContext.js',
+    '^\../../context/AuthContext$': '<rootDir>/src/context/AuthContext.js',
+    '^\../../context/AuthContext.js$': '<rootDir>/src/context/AuthContext.js',
   },
 };

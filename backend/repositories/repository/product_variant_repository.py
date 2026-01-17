@@ -20,21 +20,21 @@ class ProductVariantRepository:
         self.db = db
 
     async def decrement_stock(self, variant_id, qty):
-        """Decrement the stock of a product variant by a given quantity if sufficient stock exists."""
+        """Decrement the quantity of a product variant by a given amount if sufficient quantity exists."""
         result = await self.db.execute(
-            select(ProductVariant).filter(ProductVariant.variant_id == variant_id, ProductVariant.stock >= qty, ProductVariant.is_deleted == False)
+            select(ProductVariant).filter(ProductVariant.variant_id == variant_id, ProductVariant.quantity >= qty, ProductVariant.is_active == True)
         )
         variant = result.scalars().first()
         if variant:
-            variant.stock -= qty
+            variant.quantity -= qty
             await self.db.commit()
             return True
         return False
 
     async def get_by_id(self, variant_id):
-        """Retrieve a product variant by its ID, excluding deleted variants."""
+        """Retrieve a product variant by its ID, restricted to active variants."""
         result = await self.db.execute(
-            select(ProductVariant).filter(ProductVariant.variant_id == variant_id, ProductVariant.is_deleted == False)
+            select(ProductVariant).filter(ProductVariant.variant_id == variant_id, ProductVariant.is_active == True)
         )
         return result.scalars().first()
 
@@ -57,10 +57,10 @@ class ProductVariantRepository:
         return variant
 
     async def delete(self, variant_id):
-        """Soft delete a product variant by its ID (marks as unavailable)."""
+        """Soft delete a product variant by its ID (marks as inactive)."""
         variant = await self.get_by_id(variant_id)
         if variant:
-            variant.is_available = False
+            variant.is_active = False
             await self.db.commit()
             return True
         return False

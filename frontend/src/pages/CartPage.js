@@ -1,5 +1,3 @@
-
-import React, { useEffect, useState } from 'react';
 import React, { useEffect, useState, memo, useMemo } from 'react';
 // ...existing code...
 import { fetchCartItems, editCartItemQuantity, removeCartItem } from '../api/cart';

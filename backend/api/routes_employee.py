@@ -20,7 +20,10 @@ async def dummy_employee_service():
         async def get_all_employee_components(self):
             return []
         async def create_employee_component(self, **kwargs):
-            return kwargs
+            # Return a minimal object matching EmployeeComponentResponse
+            payload = {**kwargs}
+            payload.setdefault('id', 1)
+            return payload
     return DummyService()
 
 @router.get("/components", response_model=List[EmployeeComponentResponse])

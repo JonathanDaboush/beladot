@@ -7,7 +7,7 @@
 # seller. Tracks category, subcategory, pricing, status, and timestamps.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Text, Numeric, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -31,7 +31,8 @@ class Product(Base):
         # Relationships to related models are defined elsewhere.
     """
     __tablename__ = 'product'
-    product_id = Column(BigInteger, primary_key=True)
+    # Use Integer for SQLite autoincrement primary key behavior
+    product_id = Column(Integer, primary_key=True, autoincrement=True)
     seller_id = Column(BigInteger, ForeignKey('user.user_id'))
     category_id = Column(BigInteger, ForeignKey('category.category_id'))
     subcategory_id = Column(BigInteger, ForeignKey('subcategory.subcategory_id'))

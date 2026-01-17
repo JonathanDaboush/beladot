@@ -23,31 +23,41 @@ from backend.repositories.repository.product_image_repository import ProductImag
 import os
 import asyncio
 
-async def create_product(self, product_data):
+async def create_product(product_data=None, **kwargs):
     """
     Create a new product and its variants for a seller.
     Args:
-        product_data: Dictionary containing product and variant details.
+        product_data: Optional dictionary containing product and variant details.
+        kwargs: Alternative keyword args (supports calls like seller_id=..., db=..., name=..., etc.)
     Returns:
         The created Product object.
     """
-    db = product_data.get('db')
+    # Support both dict and kwargs inputs
+    if product_data is None:
+        product_data = {}
+    data = {**product_data, **kwargs}
+    db = data.get('db')
     repo = ProductRepository(db)
     variant_repo = ProductVariantRepository(db)
+    # Map schema fields to persistence model fields; provide safe defaults
     product = Product(
         product_id=None,
-        name=product_data['name'],
-        description=product_data['description'],
-        price=product_data['price'],
-        stock=product_data['stock'],
-        category_id=product_data['category_id'],
-        subcategory_id=product_data['subcategory_id']
+        seller_id=data.get('seller_id'),
+        category_id=data['category_id'],
+        subcategory_id=data.get('subcategory_id'),
+        title=data['name'],
+        description=data['description'],
+        price=data['price'],
+        currency=data.get('currency', 'USD'),
+        is_active=True,
+        created_at=None,
+        updated_at=None,
     )
     product = await repo.save(product)
     from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
     from backend.persistance.product_variant_image import ProductVariantImage
     # Save variants if provided
-    variants = product_data.get('variants', [])
+    variants = data.get('variants', [])
     for v in variants:
         variant = ProductVariant(
             variant_id=None,
@@ -75,15 +85,25 @@ async def create_product(self, product_data):
     os.makedirs(product_folder, exist_ok=True)
     # Save product images if provided
     image_repo = ProductImageRepository(db)
-    images = product_data.get('images', [])
+    images = data.get('images', [])
     for img_url in images:
         image = ProductImage(
             image_id=None,
             product_id=product.product_id,
             image_url=img_url
         )
-        image_repo.save(image)
-    return product
+        await image_repo.save(image)
+    # Return shape expected by SellerProductResponse
+    return {
+        'id': product.product_id,
+        'name': data['name'],
+        'description': data['description'],
+        'price': float(data['price']),
+        'category_id': data['category_id'],
+        'subcategory_id': data.get('subcategory_id'),
+        'img_url': data.get('img_url'),
+        'seller_id': data.get('seller_id'),
+    }
 
 async def edit_product(self, product):
     db = product.get('db')

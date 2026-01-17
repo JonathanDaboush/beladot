@@ -1,7 +1,4 @@
-
-
-
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 // ...existing code...
 import { editWishlistItemQuantity, removeWishlistItem } from '../api/wishlist';
 import DecisionFrame from '../components/DecisionFrame';
@@ -12,7 +9,6 @@ const WishlistPage = () => {
   const { data: wishlistItems, loading, error } = useWishlistItems();
   const [decisionMode, setDecisionMode] = useState(false);
   const [decisionType, setDecisionType] = useState('');
-  import React, { useState, memo } from 'react';
   const [selectedItem, setSelectedItem] = useState(null);
   const [newQty, setNewQty] = useState(1);
   const [preview, setPreview] = useState('');
@@ -83,8 +79,7 @@ const WishlistPage = () => {
                         src={item.variant?.image_url || item.product.image_url}
                         alt={item.variant?.name || item.product.name}
                         className="img-fluid rounded-start"
-              <WishlistItemsList items={wishlistItems} onEdit={editWishlistItemQuantity} onRemove={removeWishlistItem} />
-      >
+                      />
         {decisionType === 'edit' && selectedItem && (
           <div>
             <div className="mb-2">Edit quantity for <b>{selectedItem.product.name}{selectedItem.variant ? ' (' + selectedItem.variant.name + ')' : ''}</b></div>

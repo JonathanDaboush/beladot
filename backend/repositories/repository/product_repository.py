@@ -20,21 +20,23 @@ class ProductRepository:
         self.db = db
 
     async def decrement_stock(self, product_id, qty):
-        """Decrement the stock of a product by a given quantity if sufficient stock exists."""
+        """Decrement product availability when purchasing a non-variant product.
+        The Product model does not track stock; treat as available if active.
+        """
         result = await self.db.execute(
-            select(Product).filter(Product.product_id == product_id, Product.stock >= qty, Product.is_deleted == False)
+            select(Product).filter(Product.product_id == product_id, Product.is_active == True)
         )
         product = result.scalars().first()
         if product:
-            product.stock -= qty
+            # No stock field on Product; assume purchase allowed when active.
             await self.db.commit()
             return True
         return False
 
     async def get_by_id(self, product_id):
-        """Retrieve a product by its ID, excluding deleted products."""
+        """Retrieve a product by its ID, restricted to active products."""
         result = await self.db.execute(
-            select(Product).filter(Product.product_id == product_id, Product.is_deleted == False)
+            select(Product).filter(Product.product_id == product_id, Product.is_active == True)
         )
         return result.scalars().first()
 
@@ -57,10 +59,10 @@ class ProductRepository:
         return product
 
     async def delete(self, product_id):
-        """Soft delete a product by its ID (marks as unavailable)."""
+        """Soft delete a product by its ID (marks as inactive)."""
         product = await self.get_by_id(product_id)
         if product:
-            product.is_available = False
+            product.is_active = False
             await self.db.commit()
             return True
         return False

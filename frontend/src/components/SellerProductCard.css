@@ -1,0 +1,14 @@
+.seller-product-card {
+  display: flex;
+  align-items: center;
+}
+.product-image {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  margin-right: 8px;
+}
+.product-info {
+  display: flex;
+  flex-direction: column;
+}
