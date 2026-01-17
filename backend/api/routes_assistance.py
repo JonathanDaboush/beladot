@@ -35,7 +35,7 @@ async def send_refund_status_email(
     identity=Depends(require_role("user")),
         db=Depends(get_db),
 ):
-    result = await customerAssistanceServices.send_customer_refund_status_email(user_id=identity["user_id"], db=db, **payload.dict())
+    result = await customerAssistanceServices.send_customer_refund_status_email(user_id=identity["user_id"], db=db, **payload.model_dump())
     return {"result": result}
 
 @router.post("/complaint", response_model=AssistanceComplaintResponse)
@@ -45,5 +45,5 @@ async def process_complaint(
     identity=Depends(require_role("user")),
         db=Depends(get_db),
 ):
-    result = await customerAssistanceServices.process_customer_complaint(user_id=identity["user_id"], db=db, **complaint.dict())
+    result = await customerAssistanceServices.process_customer_complaint(user_id=identity["user_id"], db=db, **complaint.model_dump())
     return {"result": result}

@@ -58,5 +58,5 @@ async def edit_employee_info(
     return await service.edit_employee_info(
         manager_id=identity["manager_id"],
         employee_id=employee_id,
-        **payload.dict()
+        **payload.model_dump()
     )

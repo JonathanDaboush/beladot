@@ -30,7 +30,7 @@ async def create_product(
     identity=Depends(require_role("seller")),
     db=Depends(get_db),
 ):
-    return await sellerServices.create_product(seller_id=identity["seller_id"], db=db, **product.dict())
+    return await sellerServices.create_product(seller_id=identity["seller_id"], db=db, **product.model_dump())
 
 @router.put("/products/{product_id}", response_model=SellerProductResponse)
 async def update_product(
@@ -40,4 +40,4 @@ async def update_product(
     identity=Depends(require_role("seller")),
     db=Depends(get_db),
 ):
-    return sellerServices.edit_product(seller_id=identity["seller_id"], product_id=product_id, db=db, **product.dict(exclude_unset=True))
+    return sellerServices.edit_product(seller_id=identity["seller_id"], product_id=product_id, db=db, **product.model_dump(exclude_unset=True))

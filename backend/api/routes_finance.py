@@ -66,7 +66,7 @@ async def create_issue(
 ):
     return await finance_services.create_issue(
         employee_id=identity["employee_id"],
-        **issue.dict(),
+        **issue.model_dump(),
     )
 
 @router.put("/issues/{issue_id}", response_model=FinanceIssueResponse)
@@ -78,7 +78,7 @@ async def update_issue(
 ):
     return await finance_services.update_issue(
         issue_id,
-        **update.dict(),
+        **update.model_dump(),
     )
 
 @router.delete("/issues/{issue_id}")
@@ -99,5 +99,5 @@ async def update_reimbursement(
     finance_services=Depends(get_finance_services),
     identity=Depends(require_role("employee")),
 ):
-    return {**update.dict(), "id": reimbursement_id}
+    return {**update.model_dump(), "id": reimbursement_id}
 

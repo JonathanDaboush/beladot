@@ -41,4 +41,4 @@ async def create_employee_component(
     identity=Depends(require_role("employee")),
     db=Depends(get_db),
 ):
-    return await employeeService.create_employee_component(employee_id=identity["employee_id"], db=db, **component.dict())
+    return await employeeService.create_employee_component(employee_id=identity["employee_id"], db=db, **component.model_dump())

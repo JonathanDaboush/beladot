@@ -30,7 +30,7 @@ async def create_shipment(
     identity=Depends(require_role("employee")),
     db=Depends(get_db),
 ):
-    return await shippingServices.create_shipment(employee_id=identity["employee_id"], db=db, **shipment.dict())
+    return await shippingServices.create_shipment(employee_id=identity["employee_id"], db=db, **shipment.model_dump())
 
 @router.post("/shipment-events", response_model=ShipmentEventResponse)
 async def create_shipment_event(
@@ -39,4 +39,4 @@ async def create_shipment_event(
     identity=Depends(require_role("employee")),
     db=Depends(get_db),
 ):
-    return await shippingServices.create_shipment_event(employee_id=identity["employee_id"], db=db, **event.dict())
+    return await shippingServices.create_shipment_event(employee_id=identity["employee_id"], db=db, **event.model_dump())
