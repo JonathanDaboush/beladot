@@ -29,6 +29,10 @@ class DevelopmentSettings(BaseAppSettings):
     pass
 
 class TestSettings(BaseAppSettings):
+    # Provide safe defaults for tests to allow import/run without external env
+    SECRET_KEY: str = 'test-secret-key'
+    EMAIL_API_KEY: str = 'test-email-api-key'
+    DATABASE_URL: str = 'sqlite:///./test.db'
     # For tests, ignore extra env vars and avoid loading .env
     model_config = SettingsConfigDict(
         env_file=None,
