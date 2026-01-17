@@ -50,6 +50,13 @@ describe('Header', () => {
     expect(await screen.findByText('Fruits')).toBeInTheDocument();
   });
 
+  it('does not show dropdown for categories without subcategories', async () => {
+    render(<Header />);
+    const techBtn = await screen.findByText('Tech');
+    fireEvent.mouseEnter(techBtn);
+    expect(screen.queryByText('Fruits')).not.toBeInTheDocument();
+  });
+
   it('renders InfoBox with title and text', () => {
     render(<InfoBox title="Tips" text="Always check variants" />);
     expect(screen.getByText('Tips')).toBeInTheDocument();

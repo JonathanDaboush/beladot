@@ -147,3 +147,23 @@ def test_shipping_create_shipment_rejects_non_created(client):
     )
     # Rejection may surface as validation (422) or server errors
     assert res.status_code in (400, 422, 500)
+
+
+def test_seller_product_create_invalid_payload_returns_422(client):
+    # Missing required fields like name/price => validation error
+    res = client.post(
+        "/api/v1/seller/products",
+        json={"description": "d", "category_id": 1},
+        headers=_headers("seller", "5"),
+    )
+    assert res.status_code == 422
+
+
+def test_assistance_refund_status_missing_fields_returns_422(client):
+    # Empty payload should produce validation error
+    res = client.post(
+        "/api/v1/assistance/refund-status",
+        json={},
+        headers=_headers("user", "9"),
+    )
+    assert res.status_code == 422
