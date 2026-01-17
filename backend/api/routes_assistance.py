@@ -1,6 +1,6 @@
 from backend.persistance.db_dependency import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
-from backend.schemas_assistance import (
+from backend.schemas.schemas_assistance import (
     AssistanceRefundStatusEmail, AssistanceRefundStatusResponse,
     AssistanceComplaint, AssistanceComplaintResponse
 )

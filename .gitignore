@@ -3,13 +3,16 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.env
+# Never commit local env or secrets
 .env
+.env.*
+.venv/
 venv/
 ENV/
 
-# VSCode
+# VSCode / IDE
 .vscode/
+.idea/
 
 # OS
 .DS_Store
@@ -22,8 +25,15 @@ Thumbs.db
 # Logs
 *.log
 
-# Pytest
+# Pytest / tooling caches
 .cache/
+.mypy_cache/
+.pytest_cache/
+.tox/
+.coverage*
+htmlcov/
+dist/
+build/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -32,12 +42,19 @@ Thumbs.db
 *.bak
 *.swp
 
-# Media & uploads
+# Media & uploads (block committed uploads)
 backend/images/uploads/
 backend/images/product_images/
 backend/images/user_images/
 backend/images/variant_images/
 frontend/public/uploads/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/build/
+frontend/.cache/
+frontend/.parcel-cache/
+coverage/
 
 # Test cache
 .pytest_cache/

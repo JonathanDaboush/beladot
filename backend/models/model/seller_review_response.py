@@ -4,9 +4,10 @@ seller_review_response.py
 Model for seller review response entity.
 Represents a seller's response to a product review, including text and timestamps.
 """
+from datetime import datetime
 
 class SellerReviewResponse:
-    def __init__(self, response_id, review_id, seller_id, response_text, created_at):
+    def __init__(self, response_id: int, review_id: int, seller_id: int, response_text: str, created_at: datetime) -> None:
         """
         Initialize SellerReviewResponse.
         Args:

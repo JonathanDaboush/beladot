@@ -5,17 +5,18 @@ Service layer for calendar operations, including department and employee shift, 
 Handles calendar data retrieval for employees and managers with role-based access.
 """
 # backend/service/calendarServices.py
-from backend.repository.employee_repository import EmployeeRepository
-from backend.repository.shift_repository import ShiftRepository
-from backend.repository.employee_pto_repository import EmployeePTORepository
-from backend.repository.employee_sickday_repository import EmployeeSickDayRepository
+from backend.repositories.repository.employee_repository import EmployeeRepository
+from backend.repositories.repository.shift_repository import ShiftRepository
+from backend.repositories.repository.employee_pto_repository import EmployeePTORepository
+from backend.repositories.repository.employee_sickday_repository import EmployeeSickDayRepository
 
 class CalendarService:
     """
     CalendarService provides methods to retrieve calendar data for departments and employees.
     Supports role-based access for managers and employees.
     """
-    def __init__(self, db):
+    from sqlalchemy.ext.asyncio import AsyncSession
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.employee_repo = EmployeeRepository(db)
         self.shift_repo = ShiftRepository(db)

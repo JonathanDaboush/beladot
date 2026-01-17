@@ -6,7 +6,7 @@
 # Provides async methods for retrieving payments by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.payment import Payment
+from backend.models.model.payment import Payment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

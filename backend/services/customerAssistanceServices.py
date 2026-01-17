@@ -9,26 +9,30 @@ email notifications, and shipment issue handling. All repository/model operation
 use a request-scoped DB session managed by the caller.
 """
 
-from backend.repository.sellers_expense_repository import SellerExpenseRepository
-from backend.model.sellers_expense import SellerExpense
+from backend.repositories.repository.sellers_expense_repository import SellerExpenseRepository
+from backend.models.model.sellers_expense import SellerExpense
 from backend.services.payout_utils import create_refund, create_seller_payout, create_reimbursement
-from backend.repository.order_repository import OrderRepository
-from backend.repository.refund_request_repository import RefundRequestRepository
-from backend.model.order import Order
-from backend.model.refund_request import RefundRequest
-from backend.repository.order_item_repository import OrderItemRepository
-from backend.repository.product_repository import ProductRepository
-from backend.repository.product_variant_repository import ProductVariantRepository
-from backend.repository.product_image_repository import ProductImageRepository
-from backend.repository.product_variant_image_repository import ProductVariantImageRepository
-from backend.model.order_item import OrderItem
-from backend.repository.shipment_issue_repository import ShipmentIssueRepository
-from backend.repository.shipment_repository import ShipmentRepository
-from backend.repository.shipment_item_repository import ShipmentItemRepository
-from backend.model.shipment_issue import ShipmentIssue
-from backend.model.shipment import Shipment
-from backend.model.shipment_item import ShipmentItem
+from backend.repositories.repository.order_repository import OrderRepository
+from backend.repositories.repository.refund_request_repository import RefundRequestRepository
+from backend.models.model.order import Order
+from backend.models.model.refund_request import RefundRequest
+from backend.repositories.repository.order_item_repository import OrderItemRepository
+from backend.repositories.repository.product_repository import ProductRepository
+from backend.repositories.repository.product_variant_repository import ProductVariantRepository
+from backend.repositories.repository.product_image_repository import ProductImageRepository
+from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
+from backend.models.model.order_item import OrderItem
+from backend.repositories.repository.shipment_issue_repository import ShipmentIssueRepository
+from backend.repositories.repository.shipment_repository import ShipmentRepository
+from backend.repositories.repository.shipment_item_repository import ShipmentItemRepository
+from backend.models.model.shipment_issue import ShipmentIssue
+from backend.models.model.shipment import Shipment
+from backend.models.model.shipment_item import ShipmentItem
 import os
+from typing import Union
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+DBSession = Union[AsyncSession, Session]
 
 def send_customer_refund_status_email(customer_email, customer_name, order_id, refund_amount, status, description=None):
     """
@@ -95,7 +99,7 @@ def send_seller_broken_product_notification(seller_email, seller_name, product_n
         html_content = html_content.replace('{{ variant_name }}', '')
     return generate_email(seller_email, subject, pagePath)
 
-async def get_all_customer_refund_requests(user_id, db, min_date=None, max_date=None):
+async def get_all_customer_refund_requests(user_id, db: DBSession, min_date=None, max_date=None):
     
     """
     Args:
@@ -110,7 +114,7 @@ async def get_all_customer_refund_requests(user_id, db, min_date=None, max_date=
     return await query.all()
 
 
-async def get_specific_refund_request(refund_request_id, db):
+async def get_specific_refund_request(refund_request_id, db: DBSession):
     
     """
     Args:
@@ -150,7 +154,7 @@ async def get_specific_refund_request(refund_request_id, db):
         'order_items': detailed_items
     }
 
-async def process_customer_complaint(refund_request_id, db, description=None, **update_fields):
+async def process_customer_complaint(refund_request_id, db: DBSession, description=None, **update_fields):
     """
     Update the RefundRequest object with new values.
     Args:
@@ -164,9 +168,9 @@ async def process_customer_complaint(refund_request_id, db, description=None, **
     Args:
         db: SQLAlchemy session (request-scoped, not global; managed by caller).
     """
-    from backend.model.enums import RefundRequestStatus
-    from backend.model.refund_ledger import RefundLedger
-    from backend.repository.refund_ledger_repository import RefundLedgerRepository
+    from backend.models.model.enums import RefundRequestStatus
+    from backend.models.model.refund_ledger import RefundLedger
+    from backend.repositories.repository.refund_ledger_repository import RefundLedgerRepository
     refund_repo = RefundRequestRepository(db)
     ledger_repo = RefundLedgerRepository(db)
     refund = await refund_repo.get_by_id(refund_request_id)
@@ -209,7 +213,7 @@ async def process_customer_complaint(refund_request_id, db, description=None, **
         await send_customer_refund_status_email(customer_email, customer_name, refund.order_id, refund_amount, status, refund.description)
     return refund
 
-async def get_shipment_greivence_reports(user_id, db, min_date=None, max_date=None):
+async def get_shipment_greivence_reports(user_id, db: DBSession, min_date=None, max_date=None):
     """
     Retrieve all shipment issues for a user, optionally filtered by date.
     """
@@ -222,7 +226,7 @@ async def get_shipment_greivence_reports(user_id, db, min_date=None, max_date=No
     # Join ShipmentIssue with Shipment, filter by user_id (via order_id in Shipment)
     query = db.query(ShipmentIssue).join(Shipment, ShipmentIssue.shipment_id == Shipment.shipment_id)
     if hasattr(Shipment, 'order_id'):
-        from backend.model.order import Order
+        from backend.models.model.order import Order
         query = query.join(Order, Shipment.order_id == Order.order_id).filter(Order.user_id == user_id)
     if min_date:
         query = query.filter(Shipment.created_at >= min_date)
@@ -230,7 +234,7 @@ async def get_shipment_greivence_reports(user_id, db, min_date=None, max_date=No
         query = query.filter(Shipment.created_at <= max_date)
     return await query.all()
 
-async def get_greivence_details(issue_id, db):
+async def get_greivence_details(issue_id, db: DBSession):
     """
     Retrieve details for a specific shipment issue, including the issue, shipment, and shipment items.
     """
@@ -256,7 +260,7 @@ async def get_greivence_details(issue_id, db):
         'appointted_to': getattr(issue, 'appointted_to', None)
     }
 
-async def process_shipment_report(issue_id, db, **update_fields):
+async def process_shipment_report(issue_id, db: DBSession, **update_fields):
     """
     Update the ShipmentIssue object with new values and handle business logic for logistics vs seller fault.
     Args:
@@ -279,7 +283,7 @@ async def process_shipment_report(issue_id, db, **update_fields):
     order_id = getattr(shipment, 'order_id', None) if shipment else None
 
     # Enforce: can only process if unresolved
-    from backend.model.enums import ShipmentIssueResolution
+    from backend.models.model.enums import ShipmentIssueResolution
     if getattr(updated_issue, 'resolution', ShipmentIssueResolution.UNRESOLVED) != ShipmentIssueResolution.UNRESOLVED:
         raise Exception('Shipment issue already processed')
 

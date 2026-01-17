@@ -9,10 +9,7 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, String
-from sqlalchemy.ext.declarative import declarative_base
-
-# Base class for all ORM models in the persistence layer.
-Base = declarative_base()
+from backend.db.base import Base
 
 class EmployeeSnapshot(Base):
     """

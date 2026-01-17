@@ -5,7 +5,7 @@ Repository class for managing RefundLedger entities in the database.
 Provides async methods for saving refund ledger entries.
 """
 
-from backend.model.refund_ledger import RefundLedger
+from backend.models.model.refund_ledger import RefundLedger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class RefundLedgerRepository:

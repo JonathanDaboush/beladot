@@ -5,7 +5,7 @@ Model for reimbursement entity.
 Represents a reimbursement record, including incident, approval, and status details.
 """
 
-from backend.model.enums import ReimbursementStatus
+from backend.models.model.enums import ReimbursementStatus
 
 class Reimbursement:
     def __init__(self, reimbursement_id, incident_id, description, response=None, amount_approved=None, status=ReimbursementStatus.PENDING, deleted=False):

@@ -5,7 +5,7 @@ Model for product variant entity.
 Represents a specific variant of a product, including price, stock, and availability.
 """
 
-from backend.model.enums import AvailabilityStatus
+from backend.models.model.enums import AvailabilityStatus
 
 class ProductVariant:
     def __init__(self, variant_id, product_id, name, price, stock, is_available=AvailabilityStatus.AVAILABLE):

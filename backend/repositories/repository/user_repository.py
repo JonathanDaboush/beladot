@@ -5,9 +5,11 @@ Repository class for managing User entities in the database.
 Provides async CRUD operations and password management for users.
 """
 
-from backend.model.user import User
+from backend.persistance.user import User
+from sqlalchemy import select
+from backend.repositories.base_repository import BaseRepository
 
-class UserRepository:
+class UserRepository(BaseRepository[User, int]):
     def __init__(self, db):
         """
         Initialize the repository with a database session.
@@ -16,7 +18,7 @@ class UserRepository:
         """
         self.db = db
 
-    async def get_by_id(self, user_id):
+    async def get(self, user_id):
         """
         Retrieve a user by their ID.
         Args:
@@ -24,7 +26,8 @@ class UserRepository:
         Returns:
             User or None
         """
-        return await self.db.query(User).filter(User.user_id == user_id).first()
+        result = await self.db.execute(select(User).where(User.user_id == user_id))
+        return result.scalar_one_or_none()
 
     async def get_by_email(self, email):
         """
@@ -34,9 +37,23 @@ class UserRepository:
         Returns:
             User or None
         """
-        return await self.db.query(User).filter(User.email == email).first()
+        result = await self.db.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none()
+    async def list(self, *, limit: int = 100, offset: int = 0) -> list:
+        """
+        List users with pagination and deterministic ordering.
+        Args:
+            limit (int): Max number of users to return.
+            offset (int): Number of users to skip.
+        Returns:
+            List[User]
+        """
+        result = await self.db.execute(
+            select(User).order_by(User.user_id).limit(limit).offset(offset)
+        )
+        return result.scalars().all()
 
-    async def add_user(self, user: User):
+    async def add(self, user: User):
         """
         Add a new user to the database.
         Args:
@@ -45,11 +62,11 @@ class UserRepository:
             User: The added user.
         """
         self.db.add(user)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(user)
         return user
 
-    async def set_user_for_update(self, user: User):
+    async def update(self, user_id: int, user: User):
         """
         Update an existing user in the database.
         Args:
@@ -58,7 +75,7 @@ class UserRepository:
             User: The updated user.
         """
         self.db.merge(user)
-        await self.db.commit()
+        await self.db.flush()
         return user
 
     async def update_password_by_email(self, email, new_password):
@@ -73,11 +90,11 @@ class UserRepository:
         user = await self.get_by_email(email)
         if user:
             user.password = new_password
-            await self.set_user_for_update(user)
+            await self.update(user.user_id, user)
             return True
         return False
 
-    async def remove_user_by_id(self, user_id):
+    async def delete(self, user_id):
         """
         Remove a user from the database by their ID.
         Args:
@@ -85,10 +102,10 @@ class UserRepository:
         Returns:
             User or None: The removed user, or None if not found.
         """
-        user = await self.get_by_id(user_id)
+        user = await self.get(user_id)
         if user:
             self.db.delete(user)
-            await self.db.commit()
+            await self.db.flush()
         return user
 
     async def remove_user(self, user: User):
@@ -100,5 +117,5 @@ class UserRepository:
             User: The removed user.
         """
         self.db.delete(user)
-        await self.db.commit()
+        await self.db.flush()
         return user

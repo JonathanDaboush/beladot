@@ -7,23 +7,24 @@ shippingServices.py
 Service layer for shipment operations, including shipment events, issues, and item management.
 All repository and model operations use a db session that is request-scoped and managed by the caller (not global).
 """
-from backend.repository.shipment_repository import ShipmentRepository
+from backend.repositories.repository.shipment_repository import ShipmentRepository
 from backend.persistance.shipment import Shipment
 from backend.persistance.order import Order
-from backend.repository.order_item_repository import OrderItemRepository
+from backend.repositories.repository.order_item_repository import OrderItemRepository
 from backend.persistance.order_item import OrderItem
-from backend.repository.shipment_item_repository import ShipmentItemRepository
+from backend.repositories.repository.shipment_item_repository import ShipmentItemRepository
 from backend.persistance.shipment_item import ShipmentItem
 from backend.persistance.shipment_event import ShipmentEvent
-from backend.repository.shipment_event_repository import ShipmentEventRepository
+from backend.repositories.repository.shipment_event_repository import ShipmentEventRepository
 from backend.persistance.shipment_issue import ShipmentIssue
-from backend.repository.shipment_issue_repository import ShipmentIssueRepository
+from backend.repositories.repository.shipment_issue_repository import ShipmentIssueRepository
     # ...existing code...
 import json
 from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def delete_shipment_issue(db, issue_id):
+async def delete_shipment_issue(db: AsyncSession, issue_id: int):
     """
     Delete a shipment issue by its ID.
     Args:
@@ -48,7 +49,7 @@ async def delete_shipment_issue(db, issue_id):
     await db.commit()
     return True
 
-async def create_shipment_event(db, shipment_id, status, description, location, occurred_at):
+async def create_shipment_event(db: AsyncSession, shipment_id: int, status: str, description: str, location: str, occurred_at: datetime):
     """
     Create a shipment event for a shipment.
     Args:
@@ -88,7 +89,7 @@ async def create_shipment_event(db, shipment_id, status, description, location, 
     )
     return await shipment_event_repo.save(shipment_event)
 
-async def create_shipment_issue(db, shipment_id, shipment_employee_name, issue_type, description, created_at, appointted_to):
+async def create_shipment_issue(db: AsyncSession, shipment_id: int, shipment_employee_name: str, issue_type: str, description: str, created_at: datetime, appointted_to: str):
     """
     Create a shipment issue for a shipment.
     Args:
@@ -125,7 +126,7 @@ async def create_shipment_issue(db, shipment_id, shipment_employee_name, issue_t
     Returns:
         The created Shipment object.
     """
-    from backend.model.enums import ShipmentStatus
+    from backend.models.model.enums import ShipmentStatus
     shipment_repo = ShipmentRepository(db)
     from datetime import datetime
     created_at = datetime.utcnow()
@@ -163,7 +164,7 @@ async def create_shipment_issue(db, shipment_id, shipment_employee_name, issue_t
         db.add(item)
     await db.commit()
     return shipment
-async def get_shipments(shipment_id, db):
+async def get_shipments(shipment_id: int, db: AsyncSession):
     """
     Args:
         shipment_id: ID of the shipment.
@@ -174,7 +175,7 @@ async def get_shipments(shipment_id, db):
     shipment = await shipment_repo.get_by_id(shipment_id)
     return shipment
 
-async def get_shipment_details(shipment_id, db):
+async def get_shipment_details(shipment_id: int, db: AsyncSession):
     """
     Retrieve shipment details: shipment, shipment items, shipment events, and shipment issues.
     Args:
@@ -199,7 +200,7 @@ async def get_shipment_details(shipment_id, db):
         'shipment_issues': shipment_issues
     }
 
-async def edit_shipment_items(shipment_id, db, items_data):
+async def edit_shipment_items(shipment_id: int, db: AsyncSession, items_data):
     """
     Edit shipment items for a shipment.
     Args:
@@ -208,7 +209,7 @@ async def edit_shipment_items(shipment_id, db, items_data):
         items_data: list of dicts with keys matching ShipmentItem fields.
     items_data: list of dicts with keys matching ShipmentItem fields (including shipment_item_id for update, and optionally shipment_event_id)
     """
-    from backend.model.enums import ShipmentItemStatus
+    from backend.models.model.enums import ShipmentItemStatus
     shipment_item_repo = ShipmentItemRepository(db)
     # Collect all IDs to fetch in one query
     id_to_item = {item.get('shipment_item_id'): item for item in items_data if item.get('shipment_item_id')}
@@ -238,7 +239,7 @@ async def edit_shipment_items(shipment_id, db, items_data):
         await shipment_item_repo.update(shipment_item_id, **item)
     return True
 
-async def edit_shipment_events(shipment_id, db, events_data):
+async def edit_shipment_events(shipment_id: int, db: AsyncSession, events_data):
     """
     Edit shipment events for a shipment.
     Args:
@@ -247,7 +248,7 @@ async def edit_shipment_events(shipment_id, db, events_data):
         events_data: list of dicts with keys matching ShipmentEvent fields.
     events_data: list of dicts with keys matching ShipmentEvent fields (including event_id for update)
     """
-    from backend.model.enums import ShipmentEventStatus
+    from backend.models.model.enums import ShipmentEventStatus
     shipment_event_repo = ShipmentEventRepository(db)
     id_to_event = {event.get('event_id'): event for event in events_data if event.get('event_id')}
     if not id_to_event:
@@ -273,7 +274,7 @@ async def edit_shipment_events(shipment_id, db, events_data):
         await shipment_event_repo.update(event_id, **event)
     return True
 
-async def edit_shipment_issues(shipment_id, db, issues_data):
+async def edit_shipment_issues(shipment_id: int, db: AsyncSession, issues_data):
     """
     Edit shipment issues for a shipment.
     Args:
@@ -293,7 +294,7 @@ async def edit_shipment_issues(shipment_id, db, issues_data):
             await shipment_issue_repo.update(current.issue_id, **issue)
     return True
 
-async def get_shipment_event(event_id, db):
+async def get_shipment_event(event_id: int, db: AsyncSession):
     """
     Retrieve a shipment event by its ID.
     Args:

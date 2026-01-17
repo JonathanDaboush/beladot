@@ -6,16 +6,28 @@
 # persistence layer. All ORM models should inherit from this Base class.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy.orm import declarative_base
+from backend.db.base import Base
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
 from backend.config import settings
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {})
+
+# Derive a synchronous-compatible URL from the configured DATABASE_URL.
+# This ensures sync engine does not attempt to use async drivers like aiosqlite/asyncpg.
+_configured_url = settings.DATABASE_URL
+if "+aiosqlite" in _configured_url:
+	_sync_url = _configured_url.replace("+aiosqlite", "")
+elif "+asyncpg" in _configured_url:
+	_sync_url = _configured_url.replace("+asyncpg", "+psycopg2")
+else:
+	_sync_url = _configured_url
+
+engine = create_engine(
+	_sync_url,
+	connect_args={"check_same_thread": False} if _sync_url.startswith("sqlite") else {},
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Declarative base for all ORM models.
-Base = declarative_base()
+# Base is provided by backend.db.base (single declarative registry)

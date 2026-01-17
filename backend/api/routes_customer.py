@@ -1,7 +1,7 @@
 from backend.persistance.db_dependency import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import List
-from backend.schemas_customer import (
+from backend.schemas.schemas_customer import (
     CartItemAdd, CartItemResponse, WishlistItemAdd, WishlistItemResponse
 )
 

@@ -4,7 +4,7 @@
 
 
 
-from backend.model.refund_request import RefundRequest
+from backend.models.model.refund_request import RefundRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

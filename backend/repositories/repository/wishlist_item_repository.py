@@ -5,7 +5,7 @@ Repository class for managing WishlistItem entities in the database.
 Provides async method for retrieving wishlist items by ID.
 """
 
-from backend.model.wishlist_item import WishlistItem
+from backend.models.model.wishlist_item import WishlistItem
 
 class WishlistItemRepository:
     def __init__(self, db):

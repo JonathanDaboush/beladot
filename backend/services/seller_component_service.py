@@ -1,4 +1,4 @@
-from backend.repository.seller_component_repository import SellerComponentRepository
+from backend.repositories.repository.seller_component_repository import SellerComponentRepository
 
 """
 seller_component_service.py

@@ -5,7 +5,7 @@ Model for shift request entity.
 Represents a request for a work shift, including approval and status.
 """
 
-from backend.model.enums import ShiftRequestStatus
+from backend.models.model.enums import ShiftRequestStatus
 
 class ShiftRequest:
     def __init__(self, shift_request_id, shift_id, requesting_emp_id, approved_by_manager_id, status=ShiftRequestStatus.REQUESTED):

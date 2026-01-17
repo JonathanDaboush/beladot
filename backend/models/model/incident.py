@@ -5,7 +5,7 @@ Model for incident entity.
 Represents an incident involving an employee, including status and cost.
 """
 
-from backend.model.enums import IncidentStatus
+from backend.models.model.enums import IncidentStatus
 
 class Incident:
     def __init__(self, incident_id=None, employee_id=None, description=None, cost=None, date=None, status=IncidentStatus.OPEN, deleted=False):

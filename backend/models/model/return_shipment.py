@@ -4,9 +4,10 @@ return_shipment.py
 Model for return shipment entity.
 Represents a shipment returned by a customer, including status and timestamps.
 """
+from datetime import datetime
 
 class ReturnShipment:
-    def __init__(self, return_shipment_id, original_shipment_id, return_status, shipped_at, received_at):
+    def __init__(self, return_shipment_id: int, original_shipment_id: int, return_status: str, shipped_at: datetime, received_at: datetime) -> None:
         """
         Initialize ReturnShipment.
         Args:

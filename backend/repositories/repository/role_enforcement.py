@@ -1,13 +1,14 @@
-def manager_department_required(employee_repo):
 """
 role_enforcement.py
 
 Role-based access control utilities for API endpoints.
 Includes decorators for enforcing manager department restrictions.
+FastAPI-compatible implementation.
 """
 
 from functools import wraps
-from quart import g, jsonify
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 async def get_employee_department(employee_repo, employee_id):
     """
@@ -26,7 +27,7 @@ async def get_employee_department(employee_repo, employee_id):
 def manager_department_required(employee_repo):
     """
     Decorator for endpoints: Only allow managers to act on employees in their own department.
-    Assumes g.user is set with 'role', 'user_id', and 'department_id'.
+    Assumes request.state.identity is set with 'role', 'user_id', and 'department_id'.
     Args:
         employee_repo: Repository for employee data.
     Returns:
@@ -34,23 +35,33 @@ def manager_department_required(employee_repo):
     """
     def decorator(f):
         @wraps(f)
-        async def wrapper(*args, **kwargs):
-            current_user = g.user
-            if current_user.role != 'manager':
-                return jsonify({'error': 'Forbidden'}), 403
-            data = await args[0].get_json() if args else kwargs.get('data')
-            employee_id = data.get('employee_id') if data else kwargs.get('employee_id')
+        async def wrapper(request: Request, *args, **kwargs):
+            identity = getattr(request.state, 'identity', None)
+            if not identity:
+                return JSONResponse({'error': 'Unauthorized'}, status_code=401)
+            if identity.get('role') != 'manager':
+                return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+            data = None
+            try:
+                data = await request.json()
+            except Exception:
+                # Fallback to explicit dict passed in kwargs
+                data = kwargs.get('data')
+            employee_id = (data.get('employee_id') if isinstance(data, dict) else None) or kwargs.get('employee_id')
             if not employee_id:
-                return jsonify({'error': 'employee_id required'}), 400
+                return JSONResponse({'error': 'employee_id required'}, status_code=400)
+
             emp_dept = await get_employee_department(employee_repo, employee_id)
-            if emp_dept != current_user.department_id:
-                return jsonify({'error': 'Forbidden'}), 403
-            return await f(*args, **kwargs)
+            if emp_dept != identity.get('department_id'):
+                return JSONResponse({'error': 'Forbidden'}, status_code=403)
+
+            return await f(request, *args, **kwargs)
         return wrapper
     return decorator
 
 # Usage in app.py:
-# from backend.repository.role_enforcement import manager_department_required
+# from backend.repositories.repository.role_enforcement import manager_department_required
 # @app.route('/api/create_pto', methods=['POST'])
 # @manager_department_required(employeeServices.employee_repo)
 # async def ctrl_create_pto():

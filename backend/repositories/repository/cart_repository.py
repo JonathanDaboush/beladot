@@ -6,7 +6,7 @@
 # Provides async CRUD methods for carts.
 # ------------------------------------------------------------------------------
 
-from backend.model.cart import Cart
+from backend.models.model.cart import Cart
 
 class CartRepository:
     """

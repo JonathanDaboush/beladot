@@ -1,13 +1,4 @@
 class UserSnapshot:
-    def __init__(self, full_name, email, phone_number, account_type, bank, approved_by_name):
-"""
-user_snapshot.py
-
-Model for user snapshot entity.
-Represents a snapshot of a user's account, including credentials and contact info.
-"""
-
-class UserSnapshot:
     def __init__(self, us_id, user_id, username, password, email, phone, dob, user_type):
         """
         Initialize UserSnapshot.

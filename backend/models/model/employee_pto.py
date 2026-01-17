@@ -4,7 +4,7 @@ employee_pto.py
 Model for Employee Paid Time Off (PTO) requests, including status, approval, and date tracking.
 Represents an employee's PTO request for HR and payroll processing.
 """
-from backend.model.enums import PTOStatus
+from backend.models.model.enums import PTOStatus
 
 class EmployeePTO:
     """

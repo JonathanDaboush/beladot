@@ -8,7 +8,6 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, BigInteger, Numeric, String, DateTime, Enum, ForeignKey
-from sqlalchemy.orm import relationship
 from .base import Base
 from .enums import PayoutStatusEnum
 

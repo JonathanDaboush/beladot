@@ -7,7 +7,7 @@
 # request in the persistence layer, mapping to the domain model.
 # ------------------------------------------------------------------------------
 
-from backend.model.refund_request import RefundRequest
+from backend.models.model.refund_request import RefundRequest
 
 class RefundRequestEntity(RefundRequest):
     """

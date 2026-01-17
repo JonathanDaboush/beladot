@@ -5,7 +5,7 @@ Model for shipping snapshot entity.
 Represents a snapshot of a shipment, including events, items, and total cost.
 """
 
-from backend.model.enums import ShippingSnapshotStatus
+from backend.models.model.enums import ShippingSnapshotStatus
 
 class ShippingSnapshot:
     def __init__(self, snapshot_id, shipment_id, status=ShippingSnapshotStatus.COMPLETE, events=None, items=None, total_cost=0, created_at=None):

@@ -8,7 +8,7 @@ Repository class for managing ReturnShipment entities in the database.
 Provides async method for retrieving return shipments by ID.
 """
 
-from backend.model.return_shipment import ReturnShipment
+from backend.models.model.return_shipment import ReturnShipment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

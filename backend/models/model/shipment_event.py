@@ -5,7 +5,7 @@ Model for shipment event entity.
 Represents an event in the shipment lifecycle, including status, location, and timestamps.
 """
 
-from backend.model.enums import ShipmentEventStatus
+from backend.models.model.enums import ShipmentEventStatus
 
 class ShipmentEvent:
     def __init__(self, event_id, shipment_id, status=ShipmentEventStatus.CREATED, description=None, location=None, occurred_at=None, created_at=None, updated_at=None):

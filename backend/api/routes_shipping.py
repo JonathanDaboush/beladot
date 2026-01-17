@@ -1,6 +1,6 @@
 from backend.persistance.db_dependency import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
-from backend.schemas_shipping import (
+from backend.schemas.schemas_shipping import (
     ShipmentCreate, ShipmentResponse, ShipmentEventCreate, ShipmentEventResponse
 )
 from backend.services import shippingServices

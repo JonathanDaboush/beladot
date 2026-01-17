@@ -6,7 +6,7 @@
 # Provides async methods for retrieving categories by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.category import Category
+from backend.models.model.category import Category
 
 class CategoryRepository:
     """

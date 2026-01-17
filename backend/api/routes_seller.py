@@ -1,6 +1,6 @@
 from backend.persistance.db_dependency import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
-from backend.schemas_seller import (
+from backend.schemas.schemas_seller import (
     SellerProductCreate, SellerProductUpdate, SellerProductResponse
 )
 from backend.services import sellerServices

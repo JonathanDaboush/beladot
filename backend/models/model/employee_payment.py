@@ -1,4 +1,4 @@
-from backend.model.enums import EmployeePaymentStatus
+from backend.models.model.enums import EmployeePaymentStatus
 
 class EmployeePayment:
     def __init__(self, payment_id, emp_id, amount, payment_type, status=EmployeePaymentStatus.PENDING, processed_by_finance_emp_id=None, created_at=None, paid_at=None):

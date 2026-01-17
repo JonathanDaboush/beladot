@@ -7,15 +7,19 @@ All repository/model operations use a request-scoped DB session managed by the c
 All methods are asynchronous and provide detailed employee-related business logic.
 """
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from backend.persistance.reimbursement import Reimbursement
-from backend.repository.employee_repository import EmployeeRepository
-from backend.repository.shift_repository import ShiftRepository
-from backend.repository.employee_pto_repository import EmployeePTORepository
-from backend.repository.employee_sickday_repository import EmployeeSickDayRepository
+from backend.repositories.repository.employee_repository import EmployeeRepository
+from backend.repositories.repository.shift_repository import ShiftRepository
+from backend.repositories.repository.employee_pto_repository import EmployeePTORepository
+from backend.repositories.repository.employee_sickday_repository import EmployeeSickDayRepository
 from backend.persistance.shift import Shift
 from backend.persistance.employee_pto import EmployeePTO
 from backend.persistance.employee_sickday import EmployeeSickDay
-from backend.repository.reimbursement_repository import ReimbursementRepository
+from backend.repositories.repository.reimbursement_repository import ReimbursementRepository
+from backend.repositories.repository.incident_repository import IncidentRepository
+from backend.repositories.repository.finance_employee_repository import FinanceEmployeeRepository
+from backend.infrastructure.request_context import g
 
 from backend.services.interfaces.employee_service_interface import IEmployeeService
 
@@ -67,7 +71,7 @@ class EmployeeService(IEmployeeService):
         await reimbursement_repo.save(reimbursement)
         # Side effect: email sending should be handled by a separate notification service
         return {'reimbursement_id': getattr(reimbursement, 'reimbursement_id', None)}
-    def __init__(self, db):
+    def __init__(self, db: AsyncSession):
         """
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).

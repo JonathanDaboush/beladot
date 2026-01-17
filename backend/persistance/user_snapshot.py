@@ -6,9 +6,7 @@ Represents a snapshot of user information, including contact and account details
 """
 
 from sqlalchemy import Column, String
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from backend.db.base import Base
 
 class UserSnapshot(Base):
     __tablename__ = 'user_snapshot'

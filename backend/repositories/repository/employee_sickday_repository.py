@@ -6,7 +6,7 @@
 # Provides methods for retrieving employee sick days by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.employee_sickday import EmployeeSickDay
+from backend.models.model.employee_sickday import EmployeeSickDay
 
 class EmployeeSickDayRepository:
     """

@@ -6,7 +6,7 @@
 # Provides methods for retrieving employee payments by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.employee_payment import EmployeePayment
+from backend.models.model.employee_payment import EmployeePayment
 
 class EmployeePaymentRepository:
     """

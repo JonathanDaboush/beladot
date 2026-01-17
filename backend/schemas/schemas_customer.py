@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 class CartItemAdd(BaseModel):
-    product_id: int
-    quantity: int
+    product_id: int = Field(..., gt=0)
+    quantity: int = Field(..., gt=0, le=100)
     db: Optional[str] = None
 
 class CartItemResponse(BaseModel):
@@ -13,7 +13,7 @@ class CartItemResponse(BaseModel):
     user_id: int
 
 class WishlistItemAdd(BaseModel):
-    product_id: int
+    product_id: int = Field(..., gt=0)
     db: Optional[str] = None
 
 class WishlistItemResponse(BaseModel):

@@ -1,7 +1,7 @@
 from backend.persistance.db_dependency import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import List
-from backend.schemas_employee import (
+from backend.schemas.schemas_employee import (
     EmployeeComponentCreate, EmployeeComponentResponse
 )
 

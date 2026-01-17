@@ -4,7 +4,7 @@ import os
 import pytest
 # Ensure backend is importable when running from project root
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from backend.model.refund_request import RefundRequest
+from backend.models.model.refund_request import RefundRequest
 
 def test_refund_request_description():
     refund = RefundRequest(

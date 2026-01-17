@@ -11,7 +11,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 
 # Import your declarative Base
-from backend.persistance.base import Base  # <-- your models' Base here
+from backend.db.base import Base  # canonical declarative Base
 
 # Alembic Config object
 config = context.config

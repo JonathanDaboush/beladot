@@ -6,7 +6,7 @@
 # Provides methods for retrieving departments by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.department import Department
+from backend.models.model.department import Department
 
 class DepartmentRepository:
     """

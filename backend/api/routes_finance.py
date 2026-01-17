@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import List
 
-from backend.schemas import (
+from backend.schemas.schemas import (
     FinanceIssueCreate,
     FinanceIssueUpdate,
     FinanceIssueResponse,
@@ -18,7 +18,10 @@ router = APIRouter(prefix="/api/finance", tags=["finance"])
 def require_role(role: str):
     async def dependency(request: Request):
         identity = getattr(request.state, "identity", {})
-        if identity.get("role") != role:
+        current_role = identity.get("role")
+        if current_role is None:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if current_role != role:
             raise HTTPException(status_code=403, detail="Forbidden")
         return identity
     return dependency

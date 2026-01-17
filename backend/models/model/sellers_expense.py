@@ -6,7 +6,7 @@ Represents an expense record for a seller, linked to an order.
 """
 
 from sqlalchemy import Column, Integer, Float, ForeignKey
-from backend.persistance.base import Base
+from .base import Base
 
 class SellerExpense(Base):
     __tablename__ = 'sellers_expense'

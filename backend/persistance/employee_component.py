@@ -9,10 +9,7 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-
-# Base class for all ORM models in the persistence layer.
-Base = declarative_base()
+from backend.persistance.base import Base
 
 class EmployeeComponent(Base):
     """
@@ -29,4 +26,4 @@ class EmployeeComponent(Base):
     id = Column(BigInteger, primary_key=True)
     img_url = Column(String(255))
     description = Column(String(255))
-    department_id = Column(Integer, ForeignKey('department.id'), nullable=False)
+    department_id = Column(Integer, ForeignKey('department.department_id'), nullable=False)

@@ -9,7 +9,7 @@ Repository class for managing ShipmentIssue entities in the database.
 Provides async methods for retrieving and updating shipment issues by ID.
 """
 
-from backend.model.shipment_issue import ShipmentIssue
+from backend.models.model.shipment_issue import ShipmentIssue
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

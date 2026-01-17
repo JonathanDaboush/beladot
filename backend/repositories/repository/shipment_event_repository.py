@@ -11,7 +11,7 @@ Repository class for managing ShipmentEvent entities in the database.
 Provides async CRUD operations for shipment events.
 """
 
-from backend.model.shipment_event import ShipmentEvent
+from backend.models.model.shipment_event import ShipmentEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

@@ -6,7 +6,7 @@ Provides CRUD operations for customer components using the repository pattern.
 All operations are asynchronous and require a database session.
 """
 
-from backend.repository.seller_component_repository import SellerComponentRepository
+from backend.repositories.repository.seller_component_repository import SellerComponentRepository
 
 class SellerComponentService:
     def __init__(self, repo: SellerComponentRepository):

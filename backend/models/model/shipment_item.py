@@ -5,7 +5,7 @@ Model for shipment item entity.
 Represents an item within a shipment, including product, variant, and status.
 """
 
-from backend.model.enums import ShipmentItemStatus
+from backend.models.model.enums import ShipmentItemStatus
 
 class ShipmentItem:
     def __init__(self, shipment_item_id, shipment_id, product_id, variant_id, quantity, status=ShipmentItemStatus.PENDING, shipment_event_id=None):

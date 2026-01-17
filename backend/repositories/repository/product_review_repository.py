@@ -6,7 +6,7 @@
 # Provides async methods for retrieving product reviews by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.product_review import ProductReview
+from backend.models.model.product_review import ProductReview
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

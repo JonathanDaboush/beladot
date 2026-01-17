@@ -24,10 +24,13 @@ def generate_email(to_email, subject, pagePath, context=None):
 
 import os
 import requests
+import re
+import asyncio
+from backend.config import settings
 
 def _send_email(to_email, subject, html_content):
     api_url = os.environ.get('EMAIL_API_URL')
-    api_key = os.environ.get('EMAIL_API_KEY')
+    api_key = settings.EMAIL_API_KEY or os.environ.get('EMAIL_API_KEY')
     sender = os.environ.get('EMAIL_SENDER')
 
     if not all([api_url, api_key, sender]):
@@ -76,4 +79,27 @@ def _read_html(pagePath):
         raise FileNotFoundError(f"Email template not found: {full_path}")
     with open(full_path, 'r', encoding='utf-8') as f:
         return f.read()
+
+def sanitize_template(html: str) -> str:
+    # Remove script/style tags
+    html = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', html, flags=re.DOTALL|re.IGNORECASE)
+    # Remove on* attributes
+    html = re.sub(r'on\w+="[^"]*"', '', html)
+    return html
+
+async def generate_email_async(to_email, subject, pagePath, context=None, retries=3):
+    html_content = _read_html(pagePath)
+    if context:
+        for k, v in context.items():
+            html_content = html_content.replace(f'{{{{ {k} }}}}', str(v))
+    html_content = sanitize_template(html_content)
+    for attempt in range(retries):
+        try:
+            return _send_email(to_email, subject, html_content)
+        except Exception as e:
+            if attempt == retries - 1:
+                with open("failed_emails.log", "a") as f:
+                    f.write(f"{to_email}: {subject}\n")
+                return False
+            await asyncio.sleep(2 ** attempt)
 

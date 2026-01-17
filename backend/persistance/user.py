@@ -5,14 +5,14 @@ SQLAlchemy ORM model for the user table.
 Represents a user, including personal and account information.
 """
 
-from sqlalchemy import Column, BigInteger, String, Date
+from sqlalchemy import Column, Integer, String, Date
 from sqlalchemy.orm import relationship
 from .base import Base
 from .enums import SellerStatusEnum
 
 class User(Base):
     __tablename__ = 'user'
-    user_id = Column(BigInteger, primary_key=True)
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(255), nullable=False)
     dob = Column(Date)
     password = Column(String(255), nullable=False)

@@ -5,8 +5,8 @@ Model for ledger entry entity.
 Represents a financial transaction or event in the system ledger.
 """
 
-from backend.model.domain_event import DomainEvent, DomainEventType
-from backend.model.enums import EmployeePaymentStatus
+from backend.models.model.domain_event import DomainEvent, DomainEventType
+from backend.models.model.enums import EmployeePaymentStatus
 from datetime import datetime
 
 class LedgerEntry:

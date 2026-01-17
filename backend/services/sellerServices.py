@@ -4,19 +4,19 @@ sellerServices.py
 Service layer for seller operations, including product creation, variant management, payouts, and analysis.
 All repository and model operations use a db session that is request-scoped and managed by the caller (not global).
 """
-from backend.repository.product_repository import ProductRepository
-from backend.model.product import Product
-from backend.repository.product_comment_repository import ProductCommentRepository
-from backend.repository.order_repository import OrderRepository
-from backend.repository.product_variant_repository import ProductVariantRepository
-from backend.model.product_variant import ProductVariant
-from backend.repository.product_image_repository import ProductImageRepository
-from backend.model.product_image import ProductImage
-from backend.repository.product_variant_repository import ProductVariantRepository
-from backend.repository.seller_payout_repository import SellerPayoutRepository
-from backend.model.product import Product
-from backend.model.product_variant import ProductVariant
-from backend.repository.product_image_repository import ProductImageRepository
+from backend.repositories.repository.product_repository import ProductRepository
+from backend.models.model.product import Product
+from backend.repositories.repository.product_comment_repository import ProductCommentRepository
+from backend.repositories.repository.order_repository import OrderRepository
+from backend.repositories.repository.product_variant_repository import ProductVariantRepository
+from backend.models.model.product_variant import ProductVariant
+from backend.repositories.repository.product_image_repository import ProductImageRepository
+from backend.models.model.product_image import ProductImage
+from backend.repositories.repository.product_variant_repository import ProductVariantRepository
+from backend.repositories.repository.seller_payout_repository import SellerPayoutRepository
+from backend.models.model.product import Product
+from backend.models.model.product_variant import ProductVariant
+from backend.repositories.repository.product_image_repository import ProductImageRepository
         
 import os
 import asyncio
@@ -42,8 +42,8 @@ async def create_product(self, product_data):
         subcategory_id=product_data['subcategory_id']
     )
     product = await repo.save(product)
-    from backend.repository.product_variant_image_repository import ProductVariantImageRepository
-    from backend.model.product_variant_image import ProductVariantImage
+    from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
+    from backend.models.model.product_variant_image import ProductVariantImage
     # Save variants if provided
     variants = product_data.get('variants', [])
     for v in variants:
@@ -91,8 +91,8 @@ async def edit_product(self, product):
     update_fields = {k: v for k, v in product.items() if k != 'product_id' and k != 'db' and k != 'variants' and k != 'images'}
     updated_product = await repo.update(product_id, **update_fields)
     import os
-    from backend.repository.product_variant_image_repository import ProductVariantImageRepository
-    from backend.model.product_variant_image import ProductVariantImage
+    from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
+    from backend.models.model.product_variant_image import ProductVariantImage
     # Update or add variants and their images
     variants = product.get('variants', [])
     variant_image_repo = ProductVariantImageRepository(db)
@@ -168,7 +168,7 @@ async def edit_product(self, product):
 
 async def delete_product(self, product_id):
     import os
-    from backend.repository.product_variant_image_repository import ProductVariantImageRepository
+    from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
     from backend.routes_uploads import delete_uploaded_image
     db = product_id.get('db') if isinstance(product_id, dict) else None
     pid = product_id['product_id'] if isinstance(product_id, dict) else product_id
@@ -193,7 +193,7 @@ async def delete_product(self, product_id):
                 pass
         await variant_repo.delete(v.variant_id)
     # Delete all product images from DB and folder
-    from backend.repository.product_image_repository import ProductImageRepository
+    from backend.repositories.repository.product_image_repository import ProductImageRepository
     image_repo = ProductImageRepository(db)
     images = await image_repo.get_by_product_id(pid)
     product_folder = os.path.join('backend', 'images', 'product_images', f'product_{pid}')
@@ -215,16 +215,16 @@ async def delete_product(self, product_id):
     return await repo.delete(pid)
 
 async def get_product(self, product_id):
-    from backend.repository.product_variant_image_repository import ProductVariantImageRepository
+    from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
     db = product_id.get('db') if isinstance(product_id, dict) else None
     pid = product_id['product_id'] if isinstance(product_id, dict) else product_id
     repo = ProductRepository(db)
     product = await repo.get_by_id(pid)
-    from backend.repository.product_variant_repository import ProductVariantRepository
+    from backend.repositories.repository.product_variant_repository import ProductVariantRepository
     variant_repo = ProductVariantRepository(db)
     variants = await db.query(ProductVariant).filter(ProductVariant.product_id == pid).all()
     # Get product images
-    from backend.repository.product_image_repository import ProductImageRepository
+    from backend.repositories.repository.product_image_repository import ProductImageRepository
     image_repo = ProductImageRepository(db)
     images = await image_repo.get_by_product_id(pid)
     # Get variant images
@@ -236,10 +236,10 @@ async def get_product(self, product_id):
     return {'product': product, 'variants': variants_with_images, 'images': images}
 
 async def get_all_products(self):
-    from backend.repository.product_variant_image_repository import ProductVariantImageRepository
+    from backend.repositories.repository.product_variant_image_repository import ProductVariantImageRepository
     db = getattr(self, 'db', None)
     repo = ProductRepository(db)
-    from backend.repository.product_variant_repository import ProductVariantRepository
+    from backend.repositories.repository.product_variant_repository import ProductVariantRepository
     variant_repo = ProductVariantRepository(db)
     products = await repo.db.query(Product).all()
     result = []
@@ -282,7 +282,12 @@ def analyze_orders_for_product(db, seller_id, product_id=None, age_range=None, s
 
 
 
-async def get_seller_payout(self, seller_id, year, month, db):
+from typing import Union
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+DBSession = Union[AsyncSession, Session]
+
+async def get_seller_payout(self, seller_id, year, month, db: DBSession):
     repo = SellerPayoutRepository(db)
     payout = await repo.db.query(repo.model).filter(
         repo.model.seller_id == seller_id,
@@ -302,7 +307,7 @@ async def get_seller_payout(self, seller_id, year, month, db):
         raise ValueError(f"Payout total ({payout.total}) does not match sum of orders ({order_sum}) for seller {seller_id} in {year}-{month}.")
     return payout
 
-async def search_products_for_seller(self, seller_id, db, keywords=None, category_id=None, subcategory_id=None, min_price=None, max_price=None):
+async def search_products_for_seller(self, seller_id, db: DBSession, keywords=None, category_id=None, subcategory_id=None, min_price=None, max_price=None):
     query = db.query(Product).filter(Product.seller_id == seller_id)
     if category_id:
         query = query.filter(Product.category_id == category_id)
@@ -346,7 +351,7 @@ async def search_products_for_seller(self, seller_id, db, keywords=None, categor
     # Optionally add pagination info if needed by frontend contract
     return result
 
-async def search_products_for_customer(self, db, keywords=None, category_id=None, subcategory_id=None, min_price=None, max_price=None):
+async def search_products_for_customer(self, db: DBSession, keywords=None, category_id=None, subcategory_id=None, min_price=None, max_price=None):
     query = db.query(Product)
     if category_id:
         query = query.filter(Product.category_id == category_id)

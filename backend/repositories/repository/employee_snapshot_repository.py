@@ -6,7 +6,7 @@
 # Provides methods for retrieving employee snapshots by full name.
 # ------------------------------------------------------------------------------
 
-from backend.model.employee_snapshot import EmployeeSnapshot
+from backend.models.model.employee_snapshot import EmployeeSnapshot
 
 class EmployeeSnapshotRepository:
     """

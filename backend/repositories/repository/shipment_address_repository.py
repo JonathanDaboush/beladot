@@ -5,7 +5,7 @@ Repository class for managing ShipmentAddress entities in the database.
 Provides async method for retrieving shipment addresses by ID.
 """
 
-from backend.model.shipment_address import ShipmentAddress
+from backend.models.model.shipment_address import ShipmentAddress
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

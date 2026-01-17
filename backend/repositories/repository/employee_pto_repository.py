@@ -6,7 +6,7 @@
 # Provides methods for retrieving employee PTO by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.employee_pto import EmployeePTO
+from backend.models.model.employee_pto import EmployeePTO
 
 class EmployeePTORepository:
     """

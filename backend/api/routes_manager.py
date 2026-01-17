@@ -1,11 +1,12 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from backend.services.managerServices import ManagerService
-from backend.schemas_employee import EmployeeEditRequest
-from backend.schemas_incident import IncidentCreateRequest
+from pydantic import BaseModel
+from typing import Optional
+from backend.schemas.schemas_incident import IncidentCreate as IncidentCreateRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
-from backend.persistance.base import AsyncSessionLocal
+from backend.persistance.async_base import AsyncSessionLocal
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -16,10 +17,16 @@ router = APIRouter(prefix="/api/v1/manager", tags=["manager"])
 def require_role(role: str):
     async def dependency(request: Request):
         identity = getattr(request.state, "identity", {})
-        if identity.get("role") != role:
+        role_val = identity.get("role")
+        if role_val is None:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if role_val != role:
             raise HTTPException(status_code=403, detail="Forbidden")
         return identity
     return dependency
+
+class EmployeeEditRequest(BaseModel):
+    notes: Optional[str] = None
 
 # Dependency for DB session (replace with your actual DB dependency)
 

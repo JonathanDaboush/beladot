@@ -6,7 +6,7 @@
 # Provides async methods for saving ledger entries.
 # ------------------------------------------------------------------------------
 
-from backend.model.ledger import LedgerEntry
+from backend.models.model.ledger import LedgerEntry
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class LedgerRepository:

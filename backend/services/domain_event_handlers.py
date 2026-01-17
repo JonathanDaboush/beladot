@@ -6,12 +6,16 @@ Handles updating refund status and logging actions in the refund ledger.
 All operations are asynchronous and require a database session.
 """
 
-from backend.model.domain_event import DomainEvent, DomainEventType
-from backend.model.enums import RefundRequestStatus
-from backend.model.refund_ledger import RefundLedger
-from backend.repository.refund_ledger_repository import RefundLedgerRepository
+from backend.models.model.domain_event import DomainEvent, DomainEventType
+from backend.models.model.enums import RefundRequestStatus
+from backend.models.model.refund_ledger import RefundLedger
+from backend.repositories.repository.refund_ledger_repository import RefundLedgerRepository
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+from typing import Union
+DBSession = Union[AsyncSession, Session]
 
-async def handle_refund_event(event: DomainEvent, db):
+async def handle_refund_event(event: DomainEvent, db: DBSession):
     """
     Handle refund-related domain events (approval/denial).
     Updates refund status and logs the action in the refund ledger.
@@ -23,7 +27,7 @@ async def handle_refund_event(event: DomainEvent, db):
     Raises:
         Exception if refund not found or already processed, or event type invalid
     """
-    from backend.repository.refund_request_repository import RefundRequestRepository
+    from backend.repositories.repository.refund_request_repository import RefundRequestRepository
     refund_repo = RefundRequestRepository(db)
     ledger_repo = RefundLedgerRepository(db)
     refund = await refund_repo.get_by_id(event.entity_id)

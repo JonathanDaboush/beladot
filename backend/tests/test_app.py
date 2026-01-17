@@ -28,9 +28,14 @@ def setup_test_database():
     from alembic.config import Config
     from alembic import command
 
+    # Use a synchronous SQLite URL for Alembic
+    os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+
     alembic_cfg = Config(
         os.path.join(os.path.dirname(__file__), "../../alembic.ini")
     )
+    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../migrations"))
+    alembic_cfg.set_main_option("script_location", migrations_dir)
     command.upgrade(alembic_cfg, "head")
 
     # Import models so SQLAlchemy metadata is registered
@@ -53,6 +58,13 @@ def setup_test_database():
     import backend.persistance.product_variant_image
     import backend.persistance.wishlist
     import backend.persistance.wishlist_item
+
+    # Ensure all ORM models are materialized in the test database
+    # using the synchronous engine that points to the same SQLite file.
+    from backend.persistance.base import Base, engine as sync_engine
+    # Start from a clean slate to avoid cross-test contamination
+    Base.metadata.drop_all(bind=sync_engine)
+    Base.metadata.create_all(bind=sync_engine)
     import backend.persistance.payment
     import backend.persistance.payment_snapshot
 

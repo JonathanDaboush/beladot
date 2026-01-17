@@ -8,10 +8,9 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, String, Numeric, Text
-from sqlalchemy.ext.declarative import declarative_base
+from backend.db.base import Base
 
-# Base class for all ORM models in the persistence layer.
-Base = declarative_base()
+# Base provided by backend.db.base
 
 class RefundSnapshot(Base):
     """

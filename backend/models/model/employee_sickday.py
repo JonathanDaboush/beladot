@@ -4,7 +4,7 @@ employee_sickday.py
 Model for Employee Sick Day requests, including status, approval, and date tracking.
 Represents an employee's sick day request for HR and payroll processing.
 """
-from backend.model.enums import PTOStatus
+from backend.models.model.enums import PTOStatus
 
 class EmployeeSickDay:
     """

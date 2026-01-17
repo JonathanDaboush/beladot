@@ -1,7 +1,14 @@
+import re
+# Helper to inject request_id into logs
+def redact_pii(data):
+    if isinstance(data, dict):
+        return {k: ("[REDACTED]" if re.search(r"email|password|secret", k, re.I) else v) for k, v in data.items()}
+    return data
 import structlog
 import logging
 import sys
 from fastapi import Request
+import datetime
 
 # Configure structlog for JSON output
 structlog.configure(
@@ -27,7 +34,9 @@ async def log_request_start(request: Request):
         method=request.method,
         path=request.url.path,
         request_id=getattr(request.state, "request_id", None),
+        correlation_id=getattr(request.state, "correlation_id", None),
         client=request.client.host if request.client else None,
+        severity="INFO"
     )
 
 async def log_request_end(request: Request, status_code: int, latency: float):
@@ -38,6 +47,17 @@ async def log_request_end(request: Request, status_code: int, latency: float):
         status_code=status_code,
         latency=latency,
         request_id=getattr(request.state, "request_id", None),
+        correlation_id=getattr(request.state, "correlation_id", None),
+        severity="INFO"
     )
+def log_event(event, data):
+    logger.info(event, **redact_pii(data), severity="INFO")
 
+def log_error_event(event, data):
+    logger.error(event, **redact_pii(data), severity="ERROR")
+
+def audit_event(event_type, actor, entity, details):
+    # Immutable audit record (append-only)
+    with open("audit.log", "a") as f:
+        f.write(f"{datetime.datetime.now().isoformat()}|{event_type}|{actor}|{entity}|{details}\n")
 # Usage: import logger, log_request_start, log_request_end

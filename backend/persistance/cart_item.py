@@ -9,7 +9,6 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, BigInteger, Integer, ForeignKey
-from sqlalchemy.orm import relationship
 from .base import Base
 
 class CartItem(Base):

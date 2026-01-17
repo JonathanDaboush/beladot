@@ -5,7 +5,7 @@ Model for shipment issue entity.
 Represents an issue related to a shipment, including type, description, and resolution.
 """
 
-from backend.model.enums import ShipmentIssueResolution
+from backend.models.model.enums import ShipmentIssueResolution
 
 class ShipmentIssue:
     def __init__(self, issue_id, shipment_id, shipment_employee_name, issue_type, description, created_at, appointted_to, resolution=ShipmentIssueResolution.UNRESOLVED):

@@ -6,7 +6,7 @@
 # Provides async CRUD and filtering methods for orders, including advanced filters.
 # ------------------------------------------------------------------------------
 
-from backend.model.order import Order
+from backend.models.model.order import Order
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -37,12 +37,12 @@ class OrderRepository:
         if end_date:
             stmt = stmt.filter(Order.created_at <= end_date)
         if product_id:
-            from backend.model.order_item import OrderItem
+            from backend.models.model.order_item import OrderItem
             result = await self.db.execute(select(OrderItem).filter(OrderItem.product_id == product_id))
             order_ids = [oi.order_id for oi in result.scalars().all()]
             stmt = stmt.filter(Order.order_id.in_(order_ids))
         if age_range or sex:
-            from backend.model.user import User
+            from backend.models.model.user import User
             stmt = stmt.join(User, Order.user_id == User.user_id)
             if age_range:
                 import datetime

@@ -1,12 +1,12 @@
-from backend.repository.reimbursement_repository import ReimbursementRepository
-from backend.repository.incident_repository import IncidentRepository
-from backend.repository.employee_repository import EmployeeRepository
-from backend.repository.shift_repository import ShiftRepository
-from backend.repository.employee_pto_repository import EmployeePTORepository
-from backend.model.reimbursement import Reimbursement
+from backend.repositories.repository.reimbursement_repository import ReimbursementRepository
+from backend.repositories.repository.incident_repository import IncidentRepository
+from backend.repositories.repository.employee_repository import EmployeeRepository
+from backend.repositories.repository.shift_repository import ShiftRepository
+from backend.repositories.repository.employee_pto_repository import EmployeePTORepository
+from backend.models.model.reimbursement import Reimbursement
 from backend.persistance.incident import Incident
-from backend.model.shift import Shift
-from backend.model.employee_pto import EmployeePTO
+from backend.models.model.shift import Shift
+from backend.models.model.employee_pto import EmployeePTO
 
 """
 financeServices.py
@@ -19,7 +19,8 @@ All operations are asynchronous and require a database session.
 from backend.services.interfaces.finance_service_interface import IFinanceService
 
 class FinanceService(IFinanceService):
-	def __init__(self, db):
+	from sqlalchemy.ext.asyncio import AsyncSession
+	def __init__(self, db: AsyncSession):
 		self.db = db
 		self.incident_repo = IncidentRepository(db)
 		self.employee_repo = EmployeeRepository(db)
@@ -187,7 +188,7 @@ class FinanceService(IFinanceService):
 
 	async def delete_reimbursement(self, reimbursement_id):
 		return await self.reimbursement_repo.delete(reimbursement_id)
-	def __init__(self, db):
+	def __init__(self, db: AsyncSession):
 		self.db = db
 		self.reimbursement_repo = ReimbursementRepository(db)
 		self.incident_repo = IncidentRepository(db)

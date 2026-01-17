@@ -1,4 +1,4 @@
-from backend.repository.employee_component_repository import EmployeeComponentRepository
+from backend.repositories.repository.employee_component_repository import EmployeeComponentRepository
 
 """
 employee_component_service.py

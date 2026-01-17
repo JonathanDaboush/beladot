@@ -6,7 +6,7 @@
 # Provides methods for retrieving finance employees by ID.
 # ------------------------------------------------------------------------------
 
-from backend.model.finance_employee import FinanceEmployee
+from backend.models.model.finance_employee import FinanceEmployee
 
 class FinanceEmployeeRepository:
     """

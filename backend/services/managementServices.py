@@ -1,7 +1,7 @@
 from backend.services.employee_component_service import EmployeeComponentService
 from backend.services.seller_component_service import SellerComponentService
-from backend.repository.employee_component_repository import EmployeeComponentRepository
-from backend.repository.seller_component_repository import SellerComponentRepository
+from backend.repositories.repository.employee_component_repository import EmployeeComponentRepository
+from backend.repositories.repository.seller_component_repository import SellerComponentRepository
 
 """
 managementServices.py
@@ -11,8 +11,10 @@ Provides CRUD operations for both employee and seller components using their res
 All operations are asynchronous and require a database session.
 """
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 class ManagementServices:
-    def __init__(self, db):
+    def __init__(self, db: AsyncSession):
         """
         Initialize ManagementServices with database session.
         Args:

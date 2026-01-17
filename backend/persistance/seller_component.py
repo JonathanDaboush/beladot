@@ -8,7 +8,7 @@
 # ------------------------------------------------------------------------------
 
 from sqlalchemy import Column, Integer, String
-from backend.persistance.base import Base
+from .base import Base
 
 class SellerComponent(Base):
     """

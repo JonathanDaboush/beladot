@@ -5,7 +5,7 @@ Repository class for managing Refund entities in the database.
 Provides async methods for retrieving refunds by ID.
 """
 
-from backend.model.refund import Refund
+from backend.models.model.refund import Refund
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
