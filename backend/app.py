@@ -87,6 +87,7 @@ class TransactionMiddleware(BaseHTTPMiddleware):
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from backend.persistance.async_base import AsyncSessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from typing import AsyncIterator
 from backend.services import customerAssistanceServices, employeeServices, shippingServices
 from backend.services.managementServices import ManagementServices
@@ -252,7 +253,7 @@ def create_app():
         validate_config()
         try:
             async with AsyncSessionLocal() as session:
-                await session.execute("SELECT 1")
+                await session.execute(text("SELECT 1"))
         except Exception as e:
             logger.error(f"DB connectivity failed: {e}")
             raise
@@ -366,7 +367,7 @@ async def health():
 async def readiness():
     try:
         async with AsyncSessionLocal() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
         return {"status": "ready"}
     except Exception:
         return JSONResponse({"status": "not ready"}, status_code=503)

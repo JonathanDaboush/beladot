@@ -26,7 +26,18 @@ class BaseAppSettings(BaseSettings):
     )
 
 class DevelopmentSettings(BaseAppSettings):
-    pass
+    # Provide safe, permissive defaults for local development
+    SECRET_KEY: str = 'dev-secret-key'
+    EMAIL_API_KEY: str = 'dev-email-api-key'
+    DATABASE_URL: str = 'sqlite:///./dev.db'
+    # In dev, do not load general .env and use a DEV_ prefix to avoid accidental overrides
+    model_config = SettingsConfigDict(
+        env_file=None,
+        env_file_encoding='utf-8',
+        extra='ignore',
+        env_prefix='DEV_',
+        frozen=True,
+    )
 
 class TestSettings(BaseAppSettings):
     # Provide safe defaults for tests to allow import/run without external env
@@ -38,6 +49,8 @@ class TestSettings(BaseAppSettings):
         env_file=None,
         env_file_encoding='utf-8',
         extra='ignore',
+        # Use a dummy prefix so normal env vars (e.g., DATABASE_URL) don't override test defaults
+        env_prefix='IGNORE_',
         frozen=True,
     )
 
