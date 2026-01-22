@@ -19,12 +19,24 @@ function buildHeaders(options = {}) {
   return headers;
 }
 
-const API_BASE = '/api/v1';
+// Resolve API base flexibly: absolute URL via env, else same-origin path
+const ENV_BASE = process.env.REACT_APP_API_BASE_URL || process.env.VITE_API_BASE_URL || '';
+const SAME_ORIGIN_BASE = '/api/v1';
+
+function resolveUrl(url) {
+  // Absolute URL already
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // Allow direct '/api...' paths (CRA proxy or same-origin backend)
+  if (url.startsWith('/api')) return url;
+  const base = ENV_BASE || SAME_ORIGIN_BASE;
+  // If env base is absolute, prefix with it; else treat as path base
+  return base.startsWith('http') ? `${base}${url}` : `${base}${url}`;
+}
 
 export async function apiRequest(url, options = {}) {
   try {
     const headers = buildHeaders(options);
-    const res = await fetch(url.startsWith('/api') ? url : `${API_BASE}${url}`, { ...options, headers });
+    const res = await fetch(resolveUrl(url), { ...options, headers });
     if (res.status === 401 || res.status === 403) {
       handleAuthError();
       throw new Error('Unauthorized or forbidden');

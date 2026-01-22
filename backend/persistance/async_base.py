@@ -12,10 +12,12 @@ def get_async_engine():
     """
     global _engine
     if _engine is None:
-        import os
-        url = os.environ.get("DATABASE_URL")
-        if not url:
-            raise RuntimeError("DATABASE_URL environment variable not set")
+        # Load URL from application settings (dev/test provide safe defaults)
+        from backend.config import settings
+        url = settings.DATABASE_URL
+        # Force SQLite in dev/test if URL points to Postgres to avoid local auth issues
+        if settings.ENV in ("dev", "test") and url.startswith("postgres"):
+            url = "sqlite+aiosqlite:///./dev.db" if settings.ENV == "dev" else "sqlite+aiosqlite:///./test.db"
         # Ensure async driver for SQLite in test environments
         if url.startswith("sqlite") and "+aiosqlite" not in url:
             url = url.replace("sqlite://", "sqlite+aiosqlite://")

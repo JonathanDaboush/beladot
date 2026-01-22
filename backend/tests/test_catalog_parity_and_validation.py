@@ -16,32 +16,41 @@ def client():
     return TestClient(app)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def setup_test_database():
+    # Ensure we use test settings and Alembic to create full schema
+    os.environ["ENV"] = "test"
+    os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+    # Start from a clean database file to avoid stale schemas
+    try:
+        if os.path.exists("test.db"):
+            os.remove("test.db")
+    except Exception:
+        pass
     from alembic.config import Config
     from alembic import command
-
-    # Use a synchronous SQLite URL for Alembic
-    os.environ["DATABASE_URL"] = "sqlite:///./test.db"
-
     alembic_cfg = Config(
         os.path.join(os.path.dirname(__file__), "../../alembic.ini")
     )
     migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../migrations"))
     alembic_cfg.set_main_option("script_location", migrations_dir)
     command.upgrade(alembic_cfg, "head")
-
-    # Import models so SQLAlchemy metadata is registered
-    import backend.persistance.product
-    import backend.persistance.product_variant
-    import backend.persistance.product_image
-    import backend.persistance.product_variant_image
-
-    from backend.persistance.base import Base, engine as sync_engine
-    # Clean slate
-    Base.metadata.drop_all(bind=sync_engine)
-    Base.metadata.create_all(bind=sync_engine)
-
+    # Ensure any tables missing from migrations are created from ORM metadata
+    try:
+        from backend.db.base import Base
+        from backend.persistance.base import get_engine
+        Base.metadata.create_all(get_engine())
+    except Exception:
+        pass
+    # Debug: list tables present after migration
+    try:
+        import sqlite3
+        conn = sqlite3.connect("test.db")
+        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        print("Tables:", sorted(tables))
+        conn.close()
+    except Exception:
+        pass
     yield
 
 
@@ -49,9 +58,44 @@ def seed_product_and_variant():
     from backend.persistance.base import SessionLocal
     from backend.persistance.product import Product
     from backend.persistance.product_variant import ProductVariant
+    from backend.persistance.user import User
+    from backend.persistance.category import Category
     import datetime as dt
 
     db = SessionLocal()
+    # Ensure a clean state for the fixed variant_id used in tests
+    try:
+        existing = db.query(ProductVariant).filter(ProductVariant.variant_id == 1).first()
+        if existing:
+            db.delete(existing)
+            db.commit()
+    except Exception:
+        pass
+    # Ensure required FK parents exist
+    # Reuse existing seller user if present to avoid unique email collisions
+    u = db.query(User).filter(User.email == "seller@example.com").first()
+    if not u:
+        u = User(
+            full_name="Seller One",
+            dob=dt.date(1980, 1, 1),
+            password="x",
+            phone_number="0000000000",
+            email="seller@example.com",
+            created_at=dt.date.today(),
+            img_location="",
+            account_status="True",
+        )
+        db.add(u)
+        db.commit()
+        db.refresh(u)
+
+    c = Category(category_id=1, name="General", image_url=None)
+    try:
+        db.add(c)
+        db.commit()
+    except Exception:
+        db.rollback()
+
     p = Product(
         title="Test Product",
         description="Desc",
@@ -60,7 +104,7 @@ def seed_product_and_variant():
         is_active=True,
         created_at=dt.datetime.now(),
         updated_at=dt.datetime.now(),
-        seller_id=1,
+        seller_id=u.user_id,
         category_id=1,
         subcategory_id=None,
     )
@@ -86,14 +130,15 @@ def seed_product_and_variant():
         is_active=False,
         created_at=dt.datetime.now(),
         updated_at=dt.datetime.now(),
-        seller_id=1,
+        seller_id=u.user_id,
         category_id=1,
         subcategory_id=None,
     )
     db.add(p_inactive)
     db.commit()
+    pid = p.product_id
     db.close()
-    return p
+    return pid
 
 
 def headers_user():
@@ -114,23 +159,23 @@ def test_browse_parity_list(setup_test_database, client):
 
 
 def test_browse_parity_detail(setup_test_database, client):
-    p = seed_product_and_variant()
-    r_guest = client.get(f"/api/v1/catalog/products/{p.product_id}")
-    r_user = client.get(f"/api/v1/catalog/products/{p.product_id}", headers=headers_user())
+    pid = seed_product_and_variant()
+    r_guest = client.get(f"/api/v1/catalog/products/{pid}")
+    r_user = client.get(f"/api/v1/catalog/products/{pid}", headers=headers_user())
     assert r_guest.status_code == 200
     assert r_user.status_code == 200
     assert r_guest.json() == r_user.json()
 
 
 def test_validate_cart_public_and_auth(setup_test_database, client):
-    p = seed_product_and_variant()
+    pid = seed_product_and_variant()
     # Guest validation
     payload = {
         "items": [
-            {"product_id": p.product_id, "quantity": 3},  # non-variant
-            {"product_id": p.product_id, "variant_id": 1, "quantity": 5},  # exceeds stock
-            {"product_id": p.product_id + 999, "quantity": 1},  # missing product
-            {"product_id": p.product_id, "variant_id": 9999, "quantity": 1},  # missing variant
+            {"product_id": pid, "quantity": 3},  # non-variant
+            {"product_id": pid, "variant_id": 1, "quantity": 5},  # exceeds stock
+            {"product_id": pid + 999, "quantity": 1},  # missing product
+            {"product_id": pid, "variant_id": 9999, "quantity": 1},  # missing variant
         ]
     }
     r_guest = client.post("/api/v1/catalog/validate-cart", json=payload)

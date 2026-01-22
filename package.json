@@ -8,5 +8,11 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public",
+      "frontend\\public"
+    ]
   }
 }

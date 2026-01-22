@@ -1,0 +1,22 @@
+# General
+.git
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+venv/
+.env
+.env.*
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/coverage/
+
+# Backend
+**/*.pyc
+
+# Docker
+Dockerfile
+**/Dockerfile

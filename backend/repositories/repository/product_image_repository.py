@@ -27,11 +27,11 @@ class ProductImageRepository:
         return result.scalars().first()
 
     async def get_by_product_id(self, product_id):
-        """Retrieve all images for a specific product."""
+        """Retrieve all image URLs for a specific product as plain values."""
         result = await self.db.execute(
-            select(ProductImage).filter(ProductImage.product_id == product_id)
+            select(ProductImage.image_url).filter(ProductImage.product_id == product_id)
         )
-        return result.scalars().all()
+        return [row[0] for row in result.all()]
 
     async def save(self, image):
         """Save a new product image to the database."""

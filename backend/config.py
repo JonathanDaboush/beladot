@@ -26,6 +26,7 @@ class BaseAppSettings(BaseSettings):
     )
 
 class DevelopmentSettings(BaseAppSettings):
+    ENV: EnvLiteral = 'dev'
     # Provide safe, permissive defaults for local development
     SECRET_KEY: str = 'dev-secret-key'
     EMAIL_API_KEY: str = 'dev-email-api-key'
@@ -40,6 +41,7 @@ class DevelopmentSettings(BaseAppSettings):
     )
 
 class TestSettings(BaseAppSettings):
+    ENV: EnvLiteral = 'test'
     # Provide safe defaults for tests to allow import/run without external env
     SECRET_KEY: str = 'test-secret-key'
     EMAIL_API_KEY: str = 'test-email-api-key'
@@ -55,14 +57,14 @@ class TestSettings(BaseAppSettings):
     )
 
 class ProductionSettings(BaseAppSettings):
+    ENV: EnvLiteral = 'prod'
     pass
 
 def _load_settings() -> BaseAppSettings:
-    # Peek ENV from environment to select settings class
+    # Peek ENV from environment to select settings class, default to 'dev'
     env = os.environ.get('ENV')
     if env is None:
-        # Fail fast: explicit ENV required
-        raise RuntimeError('ENV environment variable is required')
+        env = 'dev'
     env = env.strip().lower()
     if env == 'dev':
         return DevelopmentSettings()

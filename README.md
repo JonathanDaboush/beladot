@@ -67,6 +67,29 @@ divinaPopinaV2/
 - Backend: `python -m backend.app`
 - Frontend: `cd frontend && npm install && npm start`
 
+### Docker (backend + frontend)
+
+Run both services with live reload and API proxying.
+
+Prerequisites:
+- Docker Desktop 4.x
+
+Steps:
+1. Optionally copy `.env.sample` to `.env` and adjust values.
+2. Build and start services:
+
+```sh
+docker compose up --build
+```
+
+Services:
+- Backend: http://localhost:8000
+- Frontend: http://localhost:3000
+
+Notes:
+- The frontend dev server proxies requests starting with `/api` to the backend inside Docker, so calls like `/api/finance/...` or `/api/product/...` work without CORS hassle.
+- The SQLite database `dev.db` is created in the backend working directory inside the container and is visible in your workspace due to the volume mount.
+
 ## Test
 - Backend: `pytest`
 - Frontend: `cd frontend && npm test`

@@ -7,6 +7,8 @@
 # ------------------------------------------------------------------------------
 
 from backend.db.base import Base
+# Ensure all model modules are imported to populate Base.metadata
+import backend.persistance as _models  # noqa: F401
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
