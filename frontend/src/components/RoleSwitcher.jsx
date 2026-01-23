@@ -53,9 +53,11 @@ export default function RoleSwitcher({ open, onClose }) {
                     className="role-btn"
                     disabled={!allowed || switching || isCurrent}
                     onClick={() => handleSwitch(role)}
+                    aria-disabled={!allowed}
                   >
                     <div className="name">{ROLE_META[role]?.name || role}</div>
                     <div className="desc">{ROLE_META[role]?.description}</div>
+                    {!allowed && <div className="muted" style={{ fontSize: '0.85rem' }}>Not available for your account</div>}
                   </button>
                 </li>
               );

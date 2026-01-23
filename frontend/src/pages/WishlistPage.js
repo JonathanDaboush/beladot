@@ -93,7 +93,7 @@ const WishlistPage = () => {
                         </div>
                         <div className="d-flex gap-2">
                           <Button kind="secondary" onClick={() => openDecision('edit', item)}>Edit quantity</Button>
-                          <Button kind="danger" onClick={() => openDecision('remove', item)}>Remove from wishlist</Button>
+                          <Button kind="destructive" onClick={() => openDecision('remove', item)}>Remove from wishlist</Button>
                         </div>
                       </div>
                     </div>

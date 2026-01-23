@@ -33,6 +33,20 @@ a:hover { color: var(--dp-primary-hover); }
 
 /* Header / Navbar */
 .header, .navbar { background: #fff; border-bottom: 1px solid var(--dp-border); }
+.header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; }
+.header-left, .header-center, .header-right { display: flex; align-items: center; gap: 0.75rem; }
+.logo { font-weight: 700; }
+.app-name { color: var(--dp-muted); font-weight: 600; }
+
+/* Role indicator pill */
+.role-indicator { padding: 0.25rem 0.5rem; border-radius: 999px; border: 1px solid var(--dp-border); font-weight: 600; cursor: pointer; }
+.role-indicator:hover { filter: brightness(0.98); }
+
+/* Global navigation */
+.global-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 1rem; }
+.global-nav a { color: var(--dp-text); padding: 0.5rem 0.25rem; border-bottom: 2px solid transparent; }
+.global-nav a:hover { color: var(--dp-primary); }
+.global-nav a.active { color: var(--dp-primary); border-bottom-color: var(--role-accent); font-weight: 700; }
 .navbar-brand { font-weight: 700; letter-spacing: 0.2px; }
 .nav-link { color: var(--dp-text); }
 .nav-link:hover { color: var(--dp-primary); }
@@ -77,6 +91,16 @@ a:hover { color: var(--dp-primary-hover); }
 .btn.secondary:hover { border-color: var(--dp-primary); color: var(--dp-primary); }
 .btn.destructive { background-color: #ef4444; border-color: #ef4444; color: #fff; }
 .btn.destructive:hover { background-color: #dc2626; border-color: #dc2626; }
+
+/* Role switcher panel */
+.role-switcher-panel { position: absolute; right: 1rem; top: 64px; width: 360px; background: #fff; border: 1px solid var(--dp-border); border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,0.12); z-index: 200; }
+.role-switcher-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--dp-border); }
+.role-switcher-content { padding: 0.75rem 1rem; }
+.role-option { margin-bottom: 0.5rem; }
+.role-btn { width: 100%; text-align: left; background: #fff; border: 1px solid var(--dp-border); border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer; }
+.role-btn:hover { border-color: var(--dp-primary); }
+.role-option.disabled .role-btn { opacity: 0.6; cursor: not-allowed; }
+.inline-status { color: var(--dp-muted); font-size: 0.9rem; margin-top: 0.5rem; }
 
 /* Forms */
 .form-control { border-color: var(--dp-border); }
