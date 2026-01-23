@@ -1,6 +1,7 @@
 // Moved from src/seller
 import React, { useState } from 'react';
 import './SellerPayments.css';
+import Button from '../../components/Button';
 
 export default function SellerPayments() {
   const [year, setYear] = useState('');
@@ -17,7 +18,7 @@ export default function SellerPayments() {
       <div className="payout-controls">
         <input type="number" placeholder="Year" value={year} onChange={e => setYear(e.target.value)} />
         <input type="number" placeholder="Month" value={month} onChange={e => setMonth(e.target.value)} />
-        <button onClick={handleSearch}>Get Payouts</button>
+        <Button kind="primary" onClick={handleSearch}>View Payouts</Button>
       </div>
       <div className="payout-list">
         {payouts.map((payout, idx) => (

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SellerProductCard from './SellerProductCard';
+import Button from '../../components/Button';
 import './SellerProductList.css';
 
 const PAGE_SIZES = [25, 50, 75];
@@ -25,7 +26,7 @@ export default function SellerProductList() {
     <div className="seller-product-list">
       <div className="header-row">
         <h2>My Products</h2>
-        <button onClick={() => navigate('/seller/products/add')} className="add-product-btn">Add Product</button>
+        <Button kind="primary" onClick={() => navigate('/seller/products/add')}>Create Product</Button>
       </div>
       <div className="filters-panel">
         {/* TODO: Render filter controls here */}

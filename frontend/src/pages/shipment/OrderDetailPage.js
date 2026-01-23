@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getOrderDetails, createShipmentEvent } from '../../api/shipmentService';
+import PageHeader from '../../components/PageHeader';
+import Button from '../../components/Button';
 
 const OrderDetailPage = ({ orderId }) => {
   const [detail, setDetail] = useState(null);
@@ -15,7 +17,7 @@ const OrderDetailPage = ({ orderId }) => {
 
   return (
     <div className="order-detail-page">
-      <h2>Order Detail</h2>
+      <PageHeader title="Order Detail" subtitle="Review order and create shipment events" />
       <div><b>Customer:</b> {shipment?.customer_name}</div>
       <div><b>Address:</b> {shipment?.address}</div>
       <div><b>Status:</b> {shipment?.shipment_status}</div>
@@ -27,18 +29,18 @@ const OrderDetailPage = ({ orderId }) => {
           </div>
         ))}
       </div>
-      <button onClick={() => setShowModal(true)}>Create Shipment Event</button>
+      <Button kind="primary" onClick={() => setShowModal(true)}>Create Shipment Event</Button>
       {showModal && (
         <div className="modal">
           <h3>Create Shipment Event</h3>
           <input placeholder="Status" value={eventData.status} onChange={e => setEventData({ ...eventData, status: e.target.value })} />
           <input placeholder="Description" value={eventData.description} onChange={e => setEventData({ ...eventData, description: e.target.value })} />
           <input placeholder="Location" value={eventData.location} onChange={e => setEventData({ ...eventData, location: e.target.value })} />
-          <button onClick={async () => {
+          <Button kind="primary" onClick={async () => {
             await createShipmentEvent(orderId, eventData);
             setShowModal(false);
-          }}>Submit</button>
-          <button onClick={() => setShowModal(false)}>Cancel</button>
+          }}>Create Shipment Event</Button>
+          <Button kind="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
         </div>
       )}
     </div>

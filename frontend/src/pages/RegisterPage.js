@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Button from '../components/Button';
 // ...existing code...
 
 const RegisterPage = () => {
@@ -54,7 +55,7 @@ const RegisterPage = () => {
               required
             />
           </div>
-          <button type="submit" className="btn btn-primary w-100">Register</button>
+          <Button type="submit" kind="primary">Create Account</Button>
         </form>
         {message && <div className="alert alert-danger mt-3 text-center">{message}</div>}
       </div>

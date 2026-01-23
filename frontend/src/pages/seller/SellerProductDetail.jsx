@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './SellerProductDetail.css';
+import Button from '../../components/Button';
 
 export default function SellerProductDetail() {
   const { productId } = useParams();
@@ -17,10 +18,12 @@ export default function SellerProductDetail() {
 
   const handleEdit = () => navigate(`/seller/products/${productId}/edit`);
   const handleSoftDelete = () => {
-    // TODO: Call soft delete API
+    if (!window.confirm('Archive this product? It will be hidden from customers.')) return;
+    // TODO: Call archive product API
   };
   const handleVariantDelete = (variantId) => {
-    // TODO: Call soft delete variant API
+    if (!window.confirm('Archive this variant? It will be hidden from customers.')) return;
+    // TODO: Call archive variant API
   };
   const handleCommentResponse = (commentId, response) => {
     // TODO: Call respond to comment API
@@ -38,14 +41,14 @@ export default function SellerProductDetail() {
       <p>Price: ${product.price}</p>
       <p>Category: {product.category_name}</p>
       <p>Total Stock: {totalStock}</p>
-      <button onClick={handleEdit}>Edit Product</button>
-      <button onClick={handleSoftDelete}>Soft Delete Product</button>
+      <Button kind="secondary" onClick={handleEdit}>Edit Product</Button>
+      <Button kind="destructive" onClick={handleSoftDelete}>Archive Product</Button>
       <h3>Variants</h3>
       <ul>
         {product.variants?.map(variant => (
           <li key={variant.variant_id}>
             {variant.name} (Stock: {variant.stock})
-            <button onClick={() => handleVariantDelete(variant.variant_id)}>Soft Delete</button>
+            <Button kind="destructive" onClick={() => handleVariantDelete(variant.variant_id)}>Archive Variant</Button>
           </li>
         ))}
       </ul>
