@@ -4,6 +4,9 @@ import { useParams } from 'react-router-dom';
 import { addGuestCartItem } from '../cart/guestCart';
 import { useAuth } from '../context/AuthContext';
 import { addToCart as addToCartApi } from '../api/cart';
+import PageHeader from '../components/PageHeader';
+import Button from '../components/Button';
+import Toast from '../components/Toast';
 // Removed custom CSS import as Bootstrap classes are used now.
 
 const ProductDetailPage = () => {
@@ -12,6 +15,7 @@ const ProductDetailPage = () => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const { user } = useAuth();
+  const [toast, setToast] = useState({ open: false, kind: 'success', message: '' });
 
   useEffect(() => {
     fetch(`/api/product/${id}`)
@@ -42,7 +46,7 @@ const ProductDetailPage = () => {
         onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
       />
       <span className="fw-bold fs-5">${price}</span>
-      <button className="btn btn-success" onClick={onAdd}>Add to Cart</button>
+      <Button kind="primary" onClick={onAdd}>Add to cart</Button>
     </div>
   );
 
@@ -63,20 +67,19 @@ const ProductDetailPage = () => {
           await addToCartApi({ product_id: prod?.id ?? prod?.product_id, quantity: qty, variant_id: variant?.id ?? variant?.variant_id });
         }
       }
-      // Feedback
-      alert(`Added ${qty} of ${prod.name}${variant ? ' (' + variant.name + ')' : ''} to cart.`);
+      setToast({ open: true, kind: 'success', message: `Added ${qty} of ${prod.name}${variant ? ' (' + variant.name + ')' : ''} to cart.` });
     } catch (e) {
-      alert('Failed to add to cart.');
+      setToast({ open: true, kind: 'error', message: 'Failed to add to cart.' });
     }
   };
 
   return (
     <>
       <div className="container py-4">
+        <PageHeader title={product.name} subtitle={product.category ? `${product.category}${product.subcategory ? ' / ' + product.subcategory : ''}` : ''} />
         <div className="row g-4 align-items-center">
           <div className="col-md-6">
             <div className="mb-2 text-muted">{seller.name}</div>
-            <h1 className="mb-2">{product.name}</h1>
             {renderRating(product.rating)}
             {(!product.variants || product.variants.length === 0) && renderPurchaseControls(product.price, () => handleAddToCart(product, null, quantity))}
             <div className="mt-3">{product.description}</div>
@@ -116,6 +119,7 @@ const ProductDetailPage = () => {
             <div className="alert alert-secondary">No reviews yet.</div>
           )}
         </div>
+        <Toast open={toast.open} kind={toast.kind} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
       </div>
     </>
   );

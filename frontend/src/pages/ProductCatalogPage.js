@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CatalogPage from '../components/CatalogPage';
 import DetailPage from '../components/DetailPage';
+import PageHeader from '../components/PageHeader';
 
 // Example data structure for products
 const products = [
@@ -32,7 +33,8 @@ const ProductCatalogPage = () => {
   );
 
   return (
-    <div className="container py-4">
+    <div className="page">
+      <PageHeader title="Catalog" subtitle="Browse products across categories" />
       {!selectedProduct ? (
         <CatalogPage
           items={products}

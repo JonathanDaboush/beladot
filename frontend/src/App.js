@@ -30,16 +30,28 @@ import SellerOrdersPage from './pages/seller/SellerOrdersPage';
 import SellerPayoutsPage from './pages/seller/SellerPayoutsPage';
 import SellerReviewsPage from './pages/seller/SellerReviewsPage';
 import SellerProfilePage from './pages/seller/SellerProfilePage';
+import SellerAnalysis from './pages/seller/SellerAnalysis';
+import SellerShippingPage from './pages/seller/SellerShippingPage';
 import IssuesCatalogPage from './pages/finance/IssuesCatalogPage';
 import IssueDetailPage from './pages/finance/IssueDetailPage';
 import ReimbursementsCatalogPage from './pages/finance/ReimbursementsCatalogPage';
 import FinanceReimbursementDetailPage from './pages/finance/ReimbursementDetailPage';
+import UiShowcasePage from './pages/UiShowcasePage';
+import ManagerTeamPage from './pages/manager/ManagerTeamPage';
+import ManagerApprovalsPage from './pages/manager/ManagerApprovalsPage';
+import ManagerDepartmentOverviewPage from './pages/manager/ManagerDepartmentOverviewPage';
 
 
 function HomePage() {
   return (
-    <div>
-      <a href="https://reactjs.org">learn react</a>
+    <div className="page">
+      <div className="section">
+        <h1 className="display-6">Welcome to Bela</h1>
+        <p className="muted">Browse categories and products, or sign in to access your portal.</p>
+        <div className="section-sm">
+          <a className="btn primary" href="/catalog">Explore Catalog</a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -51,6 +63,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<ProductCatalogPage />} />
+          <Route path="/ui" element={<UiShowcasePage />} />
           <Route path="/category/:id" element={<CategoryPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
@@ -73,12 +86,18 @@ function App() {
             <Route path="reimbursement/:id" element={<EmployeeReimbursementDetailPage />} />
             <Route path="payment-snapshots" element={<PaymentSnapshotsPage />} />
           </Route>
+            {/* Manager views (mounted under /employee paths per nav) */}
+            <Route path="/employee/team" element={<ManagerTeamPage />} />
+            <Route path="/employee/approvals" element={<ManagerApprovalsPage />} />
+            <Route path="/employee/department" element={<ManagerDepartmentOverviewPage />} />
           {/* Seller Portal: all /seller routes use SellerServicesLayout */}
           <Route path="/seller" element={<SellerServicesLayout />}>
             <Route index element={<SellerHomePage />} />
             <Route path="products" element={<SellerProductsPage />} />
             <Route path="orders" element={<SellerOrdersPage />} />
+            <Route path="analytics" element={<SellerAnalysis />} />
             <Route path="payouts" element={<SellerPayoutsPage />} />
+            <Route path="shipping" element={<SellerShippingPage />} />
             <Route path="reviews" element={<SellerReviewsPage />} />
             <Route path="profile" element={<SellerProfilePage />} />
           </Route>

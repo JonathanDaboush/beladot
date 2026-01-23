@@ -1,5 +1,4 @@
 module.exports = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
   collectCoverage: true,
   coverageDirectory: '<rootDir>/build/coverage',

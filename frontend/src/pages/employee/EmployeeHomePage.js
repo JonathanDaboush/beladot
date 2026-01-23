@@ -1,6 +1,8 @@
 
 import DecisionFrame from '../../components/DecisionFrame';
 import InfoBox from '../../components/InfoBox';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 import React, { memo } from 'react';
 
 const infoBoxes = [
@@ -57,7 +59,11 @@ const InfoBoxList = memo(({ boxes }) => (
  */
 const EmployeeHomePage = () => (
   <div>
-    <h2>Employee Home</h2>
+    <PageHeader
+      title="Employee Home"
+      subtitle="Access schedule, PTO, reimbursement, and support resources"
+    />
+    <DepartmentContext />
     <InfoBoxList boxes={infoBoxes} />
     {/* To mutate home page data, use DecisionFrame modal for all mutations. */}
   </div>

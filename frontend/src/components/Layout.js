@@ -17,7 +17,7 @@ const Layout = ({ children }) => (
   <div className="global-layout">
     <Header />
     <RoleBasedRedirect />
-    <main style={{ minHeight: '80vh', padding: '2rem 0' }}>
+    <main className="page" style={{ minHeight: '80vh' }}>
       {children}
     </main>
   </div>

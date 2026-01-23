@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import PageHeader from '../components/PageHeader';
+import Button from '../components/Button';
+import Toast from '../components/Toast';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState({ user: false, shipping: false, payment: false });
   const [form, setForm] = useState({});
+  const [toast, setToast] = useState({ open: false, kind: 'success', message: '' });
 
   useEffect(() => {
     fetch('/api/profile')
@@ -21,34 +25,35 @@ const ProfilePage = () => {
     setForm(user);
   };
   const handleSave = section => {
-    // Save changes to backend
     fetch(`/api/profile/${section}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
-    }).then(() => {
+    }).then(res => {
+      if (!res.ok) throw new Error('Failed to save changes');
       setEditMode({ ...editMode, [section]: false });
       setUser(form);
-    });
+      setToast({ open: true, kind: 'success', message: 'Profile updated' });
+    }).catch(() => setToast({ open: true, kind: 'error', message: 'Could not save changes' }));
   };
 
   if (!user) return <div className="profile-loading">Loading...</div>;
 
   return (
     <div className="profile-page">
-      <h2>Profile</h2>
+      <PageHeader title="Profile" subtitle="Manage your account and preferences" />
       <section className="profile-section">
         <h3>User Information</h3>
         {editMode.user ? (
           <>
             <input value={form.full_name || ''} onChange={e => setForm({ ...form, full_name: e.target.value })} />
-            <button onClick={() => handleSave('user')}>Save</button>
-            <button onClick={() => handleCancel('user')}>Cancel</button>
+            <Button kind="primary" onClick={() => handleSave('user')}>Save changes</Button>
+            <Button kind="secondary" onClick={() => handleCancel('user')}>Cancel</Button>
           </>
         ) : (
           <>
             <div>Name: {user.full_name}</div>
-            <button onClick={() => handleEdit('user')}>Edit</button>
+            <Button kind="secondary" onClick={() => handleEdit('user')}>Edit</Button>
           </>
         )}
       </section>
@@ -58,17 +63,17 @@ const ProfilePage = () => {
           editMode.shipping ? (
             <>
               <input value={form.shipping || ''} onChange={e => setForm({ ...form, shipping: e.target.value })} />
-              <button onClick={() => handleSave('shipping')}>Save</button>
-              <button onClick={() => handleCancel('shipping')}>Cancel</button>
+              <Button kind="primary" onClick={() => handleSave('shipping')}>Save changes</Button>
+              <Button kind="secondary" onClick={() => handleCancel('shipping')}>Cancel</Button>
             </>
           ) : (
             <>
               <div>{user.shipping}</div>
-              <button onClick={() => handleEdit('shipping')}>Edit</button>
+              <Button kind="secondary" onClick={() => handleEdit('shipping')}>Edit</Button>
             </>
           )
         ) : (
-          <button onClick={() => handleEdit('shipping')}>Create</button>
+          <Button kind="primary" onClick={() => handleEdit('shipping')}>Add shipping info</Button>
         )}
       </section>
       <section className="profile-section">
@@ -77,27 +82,28 @@ const ProfilePage = () => {
           editMode.payment ? (
             <>
               <input value={form.payment || ''} onChange={e => setForm({ ...form, payment: e.target.value })} />
-              <button onClick={() => handleSave('payment')}>Save</button>
-              <button onClick={() => handleCancel('payment')}>Cancel</button>
+              <Button kind="primary" onClick={() => handleSave('payment')}>Save changes</Button>
+              <Button kind="secondary" onClick={() => handleCancel('payment')}>Cancel</Button>
             </>
           ) : (
             <>
               <div>{user.payment}</div>
-              <button onClick={() => handleEdit('payment')}>Edit</button>
+              <Button kind="secondary" onClick={() => handleEdit('payment')}>Edit</Button>
             </>
           )
         ) : (
-          <button onClick={() => handleEdit('payment')}>Create</button>
+          <Button kind="primary" onClick={() => handleEdit('payment')}>Add payment method</Button>
         )}
       </section>
-      <button className="delete-account-btn" onClick={async () => {
+      <Button kind="danger" className="delete-account-btn" onClick={async () => {
         const res = await fetch('/api/disable_user_account', { method: 'POST' });
         if (res.status === 401 || res.status === 403) {
-          alert('Unauthorized or forbidden');
+          setToast({ open: true, kind: 'error', message: 'Unauthorized or forbidden' });
           return;
         }
         window.location.href = '/login';
-      }}>Delete Account</button>
+      }}>Delete account</Button>
+      <Toast open={toast.open} kind={toast.kind} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
     </div>
   );
 };

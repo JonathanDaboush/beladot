@@ -1,8 +1,9 @@
 import React from 'react';
+import PageHeader from '../../components/PageHeader';
 
 const SellerProfilePage = () => (
   <div>
-    <h2>Seller Profile</h2>
+    <PageHeader title="Profile" subtitle="Update your seller information and preferences" />
     {/* Seller profile info and edit UI */}
   </div>
 );

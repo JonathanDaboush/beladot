@@ -1,5 +1,7 @@
 import React, { useEffect, useState, memo } from 'react';
 import { getShipments } from '../../api/shipmentService';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
 
 const ShipmentsList = memo(({ shipments, onSelect }) => (
   <div className="shipments-list">
@@ -20,8 +22,16 @@ const ShipmentsPage = ({ onSelect }) => {
   }, []);
   return (
     <div className="shipments-page">
-      <h2>Shipments</h2>
-      <ShipmentsList shipments={shipments} onSelect={onSelect} />
+      <PageHeader title="Shipments" subtitle="Track shipments and statuses" />
+      {shipments.length === 0 ? (
+        <EmptyState
+          title="No shipments found"
+          explanation="When shipments are in progress or completed, they will appear here."
+          icon={"🚚"}
+        />
+      ) : (
+        <ShipmentsList shipments={shipments} onSelect={onSelect} />
+      )}
     </div>
   );
 };

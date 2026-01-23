@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './PersonalSchedulePage.css';
 import DecisionFrame from '../../components/DecisionFrame';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 
 // Dummy PTO/sick data for demonstration
 const initialEntries = [
@@ -83,10 +85,14 @@ const PersonalSchedulePage = () => {
 
   return (
     <div className="personal-schedule-page">
-      <h2>Personal Schedule (PTO & Sick Days)</h2>
+      <PageHeader
+        title="Personal Schedule"
+        subtitle="Track your PTO and sick days"
+      />
+      <DepartmentContext />
       <div className="calendar-controls">
         <button onClick={() => setMonth(m => m === 0 ? 11 : m - 1)}>&lt;</button>
-        <span>{today.toLocaleString('default', { month: 'long' })} {year}</span>
+        <span>{new Date(year, month, 1).toLocaleString('default', { month: 'long' })} {year}</span>
         <button onClick={() => setMonth(m => m === 11 ? 0 : m + 1)}>&gt;</button>
       </div>
       <div className="calendar-grid">

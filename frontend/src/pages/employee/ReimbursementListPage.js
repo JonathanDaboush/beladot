@@ -1,6 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
+import DepartmentContext from '../../components/DepartmentContext';
 import './ReimbursementListPage.css';
 
 const ReimbursementListPage = () => {
@@ -26,28 +29,37 @@ const ReimbursementListPage = () => {
 
   return (
     <div className="reimbursement-list-page">
-      <h2>Reimbursement List</h2>
+      <PageHeader title="Reimbursements" subtitle="Track and review reimbursement claims" />
+      <DepartmentContext />
       {loading ? <div>Loading...</div> : error ? <div>{error}</div> : (
-        <table className="reimbursement-table">
-          <thead>
-            <tr>
-              <th>Employee Name</th>
-              <th>Incident Number</th>
-              <th>Status</th>
-              <th>Approved Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reimbursements.map((r, idx) => (
-              <tr key={idx} onClick={() => navigate(`/employee/reimbursement/detail/${idx}`)} className="clickable-row">
-                <td>{r.employee_name}</td>
-                <td>{r.incident_id}</td>
-                <td>{r.status}</td>
-                <td>{r.amount_approved != null ? `$${r.amount_approved}` : ''}</td>
+        reimbursements.length === 0 ? (
+          <EmptyState
+            title="No reimbursement requests"
+            explanation="When reimbursement claims are submitted, they will appear here."
+            icon={"🧾"}
+          />
+        ) : (
+          <table className="reimbursement-table">
+            <thead>
+              <tr>
+                <th>Employee Name</th>
+                <th>Incident Number</th>
+                <th>Status</th>
+                <th>Approved Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {reimbursements.map((r, idx) => (
+                <tr key={idx} onClick={() => navigate(`/employee/reimbursement/detail/${idx}`)} className="clickable-row">
+                  <td>{r.employee_name}</td>
+                  <td>{r.incident_id}</td>
+                  <td>{r.status}</td>
+                  <td>{r.amount_approved != null ? `$${r.amount_approved}` : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
       )}
     </div>
   );

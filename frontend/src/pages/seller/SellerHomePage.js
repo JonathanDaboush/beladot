@@ -1,5 +1,6 @@
 import React from 'react';
 import InfoBox from '../../components/InfoBox';
+import PageHeader from '../../components/PageHeader';
 
 const infoBoxes = [
   {
@@ -22,7 +23,7 @@ const infoBoxes = [
 
 const SellerHomePage = () => (
   <div>
-    <h2>Seller Home</h2>
+    <PageHeader title="Seller Home" subtitle="Manage your business from one place" />
     {infoBoxes.map((box, i) => (
       <InfoBox key={i} title={box.title} text={box.text} />
     ))}

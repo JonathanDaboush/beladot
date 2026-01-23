@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import OrderAddressForm from '../components/OrderAddressForm';
+import PageHeader from '../components/PageHeader';
+import Button from '../components/Button';
 import './OrderPage.css';
 
 const OrderPage = ({ onSubmit }) => {
@@ -17,10 +19,12 @@ const OrderPage = ({ onSubmit }) => {
 
   return (
     <div className="order-page">
-      <h2>Order Details</h2>
+      <PageHeader title="Order" subtitle="Confirm shipping details to place your order" />
       <form onSubmit={handleSubmit}>
         <OrderAddressForm onChange={handleAddressChange} />
-        <button type="submit">Place Order</button>
+        <div className="mt-3">
+          <Button kind="primary" type="submit">Place order</Button>
+        </div>
       </form>
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './BookShiftPage.css';
 import DecisionFrame from '../../components/DecisionFrame';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 
 // Dummy available shifts for demonstration
 const availableShifts = [
@@ -44,7 +46,11 @@ const BookShiftPage = () => {
 
   return (
     <div className="book-shift-page">
-      <h2>Book a Shift</h2>
+      <PageHeader
+        title="Book a Shift"
+        subtitle="Sign up for available shifts"
+      />
+      <DepartmentContext />
       <div className="shift-list">
         {availableShifts.map(shift => (
           <div key={shift.id} className="shift-row">

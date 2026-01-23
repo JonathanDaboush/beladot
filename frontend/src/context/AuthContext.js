@@ -4,7 +4,7 @@
  * Provides authentication, role, and department info from the authenticated user/session object.
  * Use this context to access user state and role-based flags throughout the app.
  */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
 const AuthContext = createContext();
 
@@ -18,16 +18,42 @@ export const AuthProvider = ({ children }) => {
   // Example: Replace with real session/user fetch logic
   const [user, setUser] = useState(null); // Should be set after login
 
-  // Role and department flags derived from user/session object
-  const isEmployee = user?.isEmployee === true;
-  const isSeller = user?.isSeller === true;
-  const isManager = user?.isManager === true;
+  // Determine available roles from user/session
+  const availableRoles = useMemo(() => {
+    const roles = ['user'];
+    if (user?.isEmployee) roles.push('employee');
+    if (user?.isSeller) roles.push('seller');
+    if (user?.isManager) roles.push('manager');
+    return roles;
+  }, [user]);
+
+  // Active role controls UI; default to 'user' when not logged in
+  const [activeRole, setActiveRole] = useState('user');
+
+  // Keep department/job context for employee/manager views
+  const isEmployee = availableRoles.includes('employee');
+  const isSeller = availableRoles.includes('seller');
+  const isManager = availableRoles.includes('manager');
   const department = user?.department || null;
   const job = user?.job || null;
   const managedDepartments = user?.managedDepartments || [];
 
+  const value = {
+    user,
+    setUser,
+    availableRoles,
+    activeRole,
+    setActiveRole,
+    isEmployee,
+    isSeller,
+    isManager,
+    department,
+    job,
+    managedDepartments,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, isEmployee, isSeller, isManager, department, job, managedDepartments }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

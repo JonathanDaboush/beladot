@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchCartItems, editCartItemQuantity, removeCartItem } from '../api/cart';
 import { getGuestCart, updateGuestCartItem, removeGuestCartItem, mapGuestItemsForDisplay } from '../cart/guestCart';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import Button from '../components/Button';
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -21,7 +24,7 @@ const CartPage = () => {
           setCartItems(mapGuestItemsForDisplay(guestItems));
         } else {
           const data = await fetchCartItems();
-          const items = (data.items || []).map((item) => ({
+          const items = ((data && data.items) || []).map((item) => ({
             id: item.variant_id || item.product_id,
             product: {
               name: item.product_name,
@@ -55,7 +58,7 @@ const CartPage = () => {
       } else {
         await editCartItemQuantity(itemId, newQty);
         const data = await fetchCartItems();
-        const items = (data.items || []).map((item) => ({
+        const items = ((data && data.items) || []).map((item) => ({
           id: item.variant_id || item.product_id,
           product: {
             name: item.product_name,
@@ -86,7 +89,7 @@ const CartPage = () => {
       } else {
         await removeCartItem(itemId);
         const data = await fetchCartItems();
-        const items = (data.items || []).map((item) => ({
+        const items = ((data && data.items) || []).map((item) => ({
           id: item.variant_id || item.product_id,
           product: {
             name: item.product_name,
@@ -113,7 +116,7 @@ const CartPage = () => {
 
   return (
     <div className="container py-4">
-      <h2 className="mb-4">Your Cart</h2>
+      <PageHeader title="Cart" subtitle="Review items before checkout" />
       {loading ? (
         <div className="alert alert-info">Loading...</div>
       ) : error ? (
@@ -122,7 +125,11 @@ const CartPage = () => {
         <div className="row g-3">
           {cartItems.length === 0 ? (
             <div className="col-12">
-              <div className="alert alert-secondary text-center">Your cart is empty.</div>
+              <EmptyState
+                title="No items in cart"
+                explanation="Your cart is empty. Add items to proceed to checkout."
+                action={<Button kind="primary" onClick={() => navigate('/')}>Browse products</Button>}
+              />
             </div>
           ) : (
             cartItems.map(item => (
@@ -147,12 +154,12 @@ const CartPage = () => {
                         )}
                         <div className="mb-1">
                           Qty: <span className="fw-bold">{item.quantity}</span>
-                          <button className="btn btn-sm btn-outline-primary ms-2" onClick={() => handleEditQuantity(item.id, item.quantity + 1)}>+</button>
-                          <button className="btn btn-sm btn-outline-primary ms-1" onClick={() => handleEditQuantity(item.id, Math.max(1, item.quantity - 1))}>-</button>
+                          <Button kind="secondary" onClick={() => handleEditQuantity(item.id, item.quantity + 1)} className="ms-2">Increase</Button>
+                          <Button kind="secondary" onClick={() => handleEditQuantity(item.id, Math.max(1, item.quantity - 1))} className="ms-1">Decrease</Button>
                         </div>
                         <div className="mb-1">Price: <span className="fw-bold">${item.price}</span></div>
                         <div className="mb-1">Total: <span className="fw-bold">${item.total}</span></div>
-                        <button className="btn btn-sm btn-outline-danger mt-2" onClick={() => handleRemove(item.id)}>Remove</button>
+                        <Button kind="danger" onClick={() => handleRemove(item.id)} className="mt-2">Remove from cart</Button>
                       </div>
                     </div>
                   </div>
@@ -164,19 +171,19 @@ const CartPage = () => {
       )}
       <div className="mt-4 text-end">
         <h4>Total: <span className="fw-bold">${cartTotal}</span></h4>
-        <button
-          className="btn btn-primary mt-2"
+        <Button
+          kind="primary"
+          className="mt-2"
           onClick={() => {
             if (!user) {
-              // Gate checkout for guests: redirect to login
               navigate('/login');
             } else {
               navigate('/checkout');
             }
           }}
         >
-          Proceed to Checkout
-        </button>
+          Proceed to checkout
+        </Button>
       </div>
     </div>
   );

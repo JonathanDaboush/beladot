@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './CreateReimbursementPage.css';
 import DecisionFrame from '../../components/DecisionFrame';
 import { useAuth } from '../../context/AuthContext';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 
 const initialForm = {
   employeeName: '',
@@ -51,7 +53,8 @@ const CreateReimbursementPage = () => {
 
   return (
     <div className="create-reimbursement-page">
-      <h2>Create Reimbursement Claim</h2>
+      <PageHeader title="Create Reimbursement Claim" subtitle="Submit a claim for review" />
+      <DepartmentContext />
       {submitted ? (
         <div className="success-message">Reimbursement claim submitted!</div>
       ) : (

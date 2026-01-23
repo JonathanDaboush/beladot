@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { getSpecificRefundRequest, approveOrDenyRefund } from '../../api/customerService';
 import DecisionFrame from '../../components/DecisionFrame';
+import PageHeader from '../../components/PageHeader';
+import Button from '../../components/Button';
+import Toast from '../../components/Toast';
 
 const RefundRequestDetailPage = ({ refundRequestId }) => {
   const [detail, setDetail] = useState(null);
@@ -10,6 +13,7 @@ const RefundRequestDetailPage = ({ refundRequestId }) => {
   const [refundAmount, setRefundAmount] = useState('');
   const [description, setDescription] = useState('');
   const [preview, setPreview] = useState('');
+  const [toast, setToast] = useState({ open: false, kind: 'success', message: '' });
 
   useEffect(() => {
     getSpecificRefundRequest(refundRequestId).then(setDetail);
@@ -30,7 +34,7 @@ const RefundRequestDetailPage = ({ refundRequestId }) => {
 
   return (
     <div className="refund-request-detail-page">
-      <h2>Refund Request Detail</h2>
+      <PageHeader title="Refund Request" subtitle="Review order and decide on refund" />
       <div className="order-summary">
         <div><b>Customer:</b> {order?.customer_name}</div>
         <div><b>Order #:</b> {order?.order_number}</div>
@@ -49,8 +53,8 @@ const RefundRequestDetailPage = ({ refundRequestId }) => {
           </div>
         ))}
       </div>
-      <button onClick={() => { setShowModal(true); setModalType('approve'); }}>Approve</button>
-      <button onClick={() => { setShowModal(true); setModalType('deny'); }}>Deny</button>
+      <Button kind="primary" onClick={() => { setShowModal(true); setModalType('approve'); }}>Approve refund</Button>
+      <Button kind="danger" onClick={() => { setShowModal(true); setModalType('deny'); }}>Deny refund</Button>
       <DecisionFrame
         visible={showModal}
         onCancel={() => { setShowModal(false); setPreview(''); }}
@@ -58,6 +62,7 @@ const RefundRequestDetailPage = ({ refundRequestId }) => {
           await approveOrDenyRefund(refundRequestId, modalType, refundAmount, description);
           setShowModal(false);
           setPreview('');
+          setToast({ open: true, kind: 'success', message: modalType === 'approve' ? 'Refund approved' : 'Refund denied' });
         }}
         preview={preview}
         banner={modalType === 'approve' ? 'Approve Refund Request' : 'Deny Refund Request'}
@@ -68,6 +73,7 @@ const RefundRequestDetailPage = ({ refundRequestId }) => {
         )}
         <textarea placeholder="Reason/Description" value={description} onChange={e => setDescription(e.target.value)} onBlur={handlePreview} />
       </DecisionFrame>
+      <Toast open={toast.open} kind={toast.kind} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from urllib.parse import quote
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -252,14 +253,22 @@ async def list_categories(db: AsyncSession = Depends(get_db)):
             {
                 "subcategory_id": s_id,
                 "name": s_name or "",
-                "image_url": (f"/static/{str(s_img).replace('\\\\', '/').replace('\\', '/')}" if s_img else None),
+                "image_url": (
+                    f"/static/{quote(str(s_img).replace('\\\\', '/').replace('\\', '/'), safe='/')}"
+                    if s_img
+                    else None
+                ),
             }
             for (s_id, s_name, s_img) in sub_rows
         ]
         categories.append({
             "category_id": cid,
             "name": name or "",
-            "image_url": (f"/static/{str(img).replace('\\\\', '/').replace('\\', '/')}" if img else None),
+            "image_url": (
+                f"/static/{quote(str(img).replace('\\\\', '/').replace('\\', '/'), safe='/')}"
+                if img
+                else None
+            ),
             "subcategories": subs,
         })
     return {"categories": categories}
@@ -275,7 +284,11 @@ async def get_category(category_id: int, db: AsyncSession = Depends(get_db)):
         {
             "subcategory_id": s_id,
             "name": s_name or "",
-            "image_url": (f"/static/{str(s_img).replace('\\\\', '/').replace('\\', '/')}" if s_img else None),
+            "image_url": (
+                f"/static/{quote(str(s_img).replace('\\\\', '/').replace('\\', '/'), safe='/')}"
+                if s_img
+                else None
+            ),
         }
         for (s_id, s_name, s_img) in sub_rows
     ]
@@ -283,7 +296,11 @@ async def get_category(category_id: int, db: AsyncSession = Depends(get_db)):
         "category": {
             "category_id": cid,
             "name": name or "",
-            "image_url": (f"/static/{str(img).replace('\\\\', '/').replace('\\', '/')}" if img else None),
+            "image_url": (
+                f"/static/{quote(str(img).replace('\\\\', '/').replace('\\', '/'), safe='/')}"
+                if img
+                else None
+            ),
         },
         "subcategories": subs,
     }

@@ -2,12 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { getGrievanceDetails, processShipmentReport } from '../../api/customerService';
 import DecisionFrame from '../../components/DecisionFrame';
+import PageHeader from '../../components/PageHeader';
+import Button from '../../components/Button';
+import Toast from '../../components/Toast';
 
 const ShipmentIssueDetailPage = ({ issueId }) => {
   const [detail, setDetail] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [faultType, setFaultType] = useState('');
   const [preview, setPreview] = useState('');
+  const [toast, setToast] = useState({ open: false, kind: 'success', message: '' });
 
   useEffect(() => {
     getGrievanceDetails(issueId).then(setDetail);
@@ -26,7 +30,7 @@ const ShipmentIssueDetailPage = ({ issueId }) => {
 
   return (
     <div className="shipment-issue-detail-page">
-      <h2>Shipment Issue Detail</h2>
+      <PageHeader title="Shipment Issue" subtitle="Review shipment and categorize fault" />
       <div><b>Type:</b> {shipment_issue?.issue_type}</div>
       <div><b>Status:</b> {shipment?.shipment_status}</div>
       <div><b>Customer:</b> {shipment?.customer_name}</div>
@@ -42,7 +46,7 @@ const ShipmentIssueDetailPage = ({ issueId }) => {
           </div>
         ))}
       </div>
-      <button onClick={() => setShowModal(true)}>Process Shipment Issue</button>
+      <Button kind="primary" onClick={() => setShowModal(true)}>Process shipment issue</Button>
       <DecisionFrame
         visible={showModal}
         onCancel={() => { setShowModal(false); setPreview(''); }}
@@ -50,6 +54,7 @@ const ShipmentIssueDetailPage = ({ issueId }) => {
           await processShipmentReport(issueId, faultType);
           setShowModal(false);
           setPreview('');
+          setToast({ open: true, kind: 'success', message: 'Shipment issue processed' });
         }}
         preview={preview}
         banner="Process Shipment Issue"
@@ -62,6 +67,7 @@ const ShipmentIssueDetailPage = ({ issueId }) => {
           <option value="logistics_fault">Logistics Fault</option>
         </select>
       </DecisionFrame>
+      <Toast open={toast.open} kind={toast.kind} message={toast.message} onClose={() => setToast({ ...toast, open: false })} />
     </div>
   );
 };

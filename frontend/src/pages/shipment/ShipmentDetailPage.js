@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { getShipment, getShipmentDetails, editShipmentIssue, deleteShipmentIssue } from '../../api/shipmentService';
 import DecisionFrame from '../../components/DecisionFrame';
+import PageHeader from '../../components/PageHeader';
+import Button from '../../components/Button';
 
 const ShipmentDetailPage = ({ shipmentId }) => {
   const [detail, setDetail] = useState(null);
@@ -49,7 +51,7 @@ const ShipmentDetailPage = ({ shipmentId }) => {
 
   return (
     <div className="shipment-detail-page">
-      <h2>Shipment Detail</h2>
+      <PageHeader title="Shipment Detail" subtitle="Review shipment information and issues" />
       <div><b>Customer:</b> {shipment?.customer_name}</div>
       <div><b>Address:</b> {shipment?.address}</div>
       <div><b>Amount Paid:</b> {shipment?.amount_paid}</div>
@@ -67,8 +69,8 @@ const ShipmentDetailPage = ({ shipmentId }) => {
           <div>
             <div>Type: {shipment_issue.issue_type}</div>
             <div>Description: {shipment_issue.description}</div>
-            <button onClick={() => openDecision('edit', { issue_type: shipment_issue.issue_type, description: shipment_issue.description })}>Edit</button>
-            <button onClick={() => openDecision('delete')}>Delete</button>
+            <Button kind="secondary" onClick={() => openDecision('edit', { issue_type: shipment_issue.issue_type, description: shipment_issue.description })}>Edit Issue</Button>
+            <Button kind="destructive" onClick={() => openDecision('delete')}>Delete Issue</Button>
           </div>
         </div>
       )}

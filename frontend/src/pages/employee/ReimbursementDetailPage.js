@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './ReimbursementDetailPage.css';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 
 const ReimbursementDetailPage = () => {
   const { id } = useParams();
@@ -25,9 +27,27 @@ const ReimbursementDetailPage = () => {
       });
   }, [id]);
 
-  if (loading) return <div className="reimbursement-detail-page"><h2>Loading...</h2></div>;
-  if (error) return <div className="reimbursement-detail-page"><h2>{error}</h2></div>;
-  if (!reimbursement) return <div className="reimbursement-detail-page"><h2>Not found</h2></div>;
+  if (loading) return (
+    <div className="reimbursement-detail-page">
+      <PageHeader title="Reimbursement Detail" />
+      <DepartmentContext />
+      <div>Loading...</div>
+    </div>
+  );
+  if (error) return (
+    <div className="reimbursement-detail-page">
+      <PageHeader title="Reimbursement Detail" />
+      <DepartmentContext />
+      <div>{error}</div>
+    </div>
+  );
+  if (!reimbursement) return (
+    <div className="reimbursement-detail-page">
+      <PageHeader title="Reimbursement Detail" />
+      <DepartmentContext />
+      <div>Not found</div>
+    </div>
+  );
 
   // Authority signaling: show status badge and tooltip, hide edit/delete/amount fields if not Finance
   const isFinance = window.location.pathname.startsWith('/finance');
@@ -38,7 +58,8 @@ const ReimbursementDetailPage = () => {
       : null;
   return (
     <div className="reimbursement-detail-page">
-      <h2>Reimbursement Detail</h2>
+      <PageHeader title="Reimbursement Detail" />
+      <DepartmentContext />
       {statusBadge}
       <div className="detail-box">
         <div><strong>Employee Name:</strong> {reimbursement.employee_name}</div>

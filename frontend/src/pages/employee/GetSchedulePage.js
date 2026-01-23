@@ -1,6 +1,8 @@
 
 import DecisionFrame from '../../components/DecisionFrame';
 import React, { useState, useEffect } from 'react';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 import './GetSchedulePage.css';
 
 // Dummy data for demonstration
@@ -32,10 +34,11 @@ const GetSchedulePage = () => {
 
   return (
     <div className="get-schedule-page">
-      <h2>Monthly Schedule</h2>
+      <PageHeader title="Monthly Schedule" subtitle="View your department schedule for the month" />
+      <DepartmentContext />
       <div className="calendar-controls">
         <button onClick={() => setMonth(m => m === 0 ? 11 : m - 1)}>&lt;</button>
-        <span>{today.toLocaleString('default', { month: 'long' })} {year}</span>
+        <span>{new Date(year, month, 1).toLocaleString('default', { month: 'long' })} {year}</span>
         <button onClick={() => setMonth(m => m === 11 ? 0 : m + 1)}>&gt;</button>
       </div>
       <div className="calendar-grid">

@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
 
 // Helper to fetch department calendar from backend
 async function fetchDepartmentCalendar(year, month, viewMode = 'self') {
@@ -107,6 +109,11 @@ const SchedulePage = ({ currentUser }) => {
 
   return (
     <div className="department-calendar-layout">
+      <PageHeader
+        title="Department Schedule"
+        subtitle="View shifts, PTO, and sick days"
+      />
+      <DepartmentContext />
       <div className="calendar-left-panel">
         <div className="calendar-controls">
           <button onClick={() => setMonth(m => m === 1 ? 12 : m - 1)}>&lt;</button>

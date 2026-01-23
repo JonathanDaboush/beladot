@@ -8,6 +8,8 @@ import App from './App';
 jest.mock('./context/AuthContext', () => ({
   useAuth: () => ({
     user: null,
+    activeRole: 'user',
+    availableRoles: ['user'],
     login: jest.fn(),
     logout: jest.fn(),
   }),
@@ -42,9 +44,8 @@ afterEach(() => {
 /**
  * Test
  */
-test('renders learn react link', async () => {
+test('renders homepage welcome', async () => {
   render(<App />);
-
-  const linkElement = await screen.findByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const heading = await screen.findByText(/Welcome to Bela/i);
+  expect(heading).toBeInTheDocument();
 });

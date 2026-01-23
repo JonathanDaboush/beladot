@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 // Mock auth context and portal hook used by Header
 jest.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ isEmployee: false, isSeller: false })
+  useAuth: () => ({ activeRole: 'user', availableRoles: ['user'] })
 }));
 jest.mock('../../hooks/usePortalType', () => ({
   usePortalType: () => 'user'

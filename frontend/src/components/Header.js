@@ -1,22 +1,34 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { usePortalType } from '../hooks/usePortalType';
 import UserMenu from './UserMenu';
+import NavBar from './NavBar';
+import RoleIndicator from './RoleIndicator';
+import RoleSwitcher from './RoleSwitcher';
+import { ROLE_META } from './roles';
 
 const Header = () => {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [dropdown, setDropdown] = useState(null);
-  const { isEmployee, isSeller } = useAuth();
-  const portalType = usePortalType();
+  const { activeRole } = useAuth();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   useEffect(() => {
-    // Mock fetch for tests
-    const fetchFn = typeof fetch !== 'undefined' ? fetch : () => Promise.resolve({ json: () => Promise.resolve({ categories: [] }) });
-    fetchFn('/api/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []));
+    let mounted = true;
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
+        if (mounted) {
+          setCategories(Array.isArray(data.categories) ? data.categories : []);
+        }
+      } catch {
+        if (mounted) setCategories([]);
+      }
+    };
+    fetchCategories();
+    return () => { mounted = false; };
   }, []);
 
   const handleSearch = (e) => {
@@ -29,61 +41,21 @@ const Header = () => {
     window.location.href = '/logout';
   };
 
+  const accent = ROLE_META[activeRole]?.pillColor;
   return (
-    <header className="header">
+    <header className="header" role="banner" style={{ '--role-accent': accent }}>
       <div className="header-left">
         <span className="logo">Bela</span>
+        <span className="app-name">Commerce</span>
       </div>
       <div className="header-center">
-        {portalType === 'user' && (
-          <>
-            <form onSubmit={handleSearch} className="search-form">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="search-input"
-              />
-              <button type="submit" className="search-btn">Search</button>
-            </form>
-            <div className="category-buttons">
-              {categories.map(cat => (
-                <div key={cat.category_id} className="category-btn-wrapper">
-                  <button
-                    className="category-btn"
-                    onMouseEnter={() => setDropdown(cat.category_id)}
-                    onMouseLeave={() => setDropdown(null)}
-                    onClick={() => window.location.href = `/category/${cat.category_id}`}
-                  >
-                    {cat.name}
-                  </button>
-                  {dropdown === cat.category_id && cat.subcategories && (
-                    <div className="subcategory-dropdown">
-                      {cat.subcategories.map(sub => (
-                        <div
-                          key={sub.subcategory_id}
-                          className="subcategory-item"
-                          onClick={() => window.location.href = `/subcategory/${sub.subcategory_id}`}
-                        >
-                          {sub.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-        {portalType === 'employee' && (
-          <div className="employee-header-title">Employee Portal</div>
-        )}
-        {portalType === 'seller' && (
-          <div className="seller-header-title">Seller Portal</div>
-        )}
+        {/* Unified nav; items scoped by activeRole */}
+        <NavBar />
       </div>
       <div className="header-right">
+        {/* Role indicator is always visible; opens switcher */}
+        <RoleIndicator onClick={() => setSwitcherOpen(true)} />
+        <RoleSwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
         <UserMenu onLogout={handleLogout} />
       </div>
     </header>

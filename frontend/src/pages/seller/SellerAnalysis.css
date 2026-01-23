@@ -1,0 +1,5 @@
+/* Minimal styles for SellerAnalysis to satisfy tests */
+.seller-analysis-page { display: flex; gap: 1rem; }
+.analysis-left { flex: 2; }
+.analysis-right { flex: 1; }
+.analysis-summary { margin-top: 1rem; display: flex; gap: 1rem; color: #64748b; }

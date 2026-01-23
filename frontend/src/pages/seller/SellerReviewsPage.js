@@ -1,9 +1,15 @@
 import React from 'react';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
 
 const SellerReviewsPage = () => (
   <div>
-    <h2>Seller Reviews</h2>
-    {/* List and manage seller's reviews */}
+    <PageHeader title="Reviews" subtitle="Read and respond to customer feedback" />
+    <EmptyState
+      title="No reviews yet"
+      explanation="Reviews appear once customers start responding to your products."
+      icon={"💬"}
+    />
   </div>
 );
 

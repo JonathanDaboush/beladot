@@ -55,7 +55,7 @@ const UserMenu = ({ onLogout }) => {
     <div className="user-menu-wrapper">
       {/* User icon toggles menu open/close */}
       <div className="user-icon" onClick={() => setOpen(!open)}>
-        <span role="img" aria-label="user">64</span>
+        <span role="img" aria-label="user">👤</span>
       </div>
       {open && (
         <div className="user-dropdown">

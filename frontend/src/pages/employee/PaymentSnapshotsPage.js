@@ -1,6 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import './PaymentSnapshotsPage.css';
+import PageHeader from '../../components/PageHeader';
+import DepartmentContext from '../../components/DepartmentContext';
+import EmptyState from '../../components/EmptyState';
 
 const PaymentSnapshotsPage = () => {
   const [snapshots, setSnapshots] = useState([]);
@@ -32,7 +35,8 @@ const PaymentSnapshotsPage = () => {
     // Detail view
     return (
       <div className="payment-snapshots-page">
-        <h2>Payment Snapshot Detail</h2>
+        <PageHeader title="Payment Snapshot Detail" />
+        <DepartmentContext />
         <div className="detail-box">
           <div><strong>Employee Name:</strong> {selected.employee_name}</div>
           <div><strong>Status:</strong> {selected.status}</div>
@@ -47,7 +51,8 @@ const PaymentSnapshotsPage = () => {
 
   return (
     <div className="payment-snapshots-page">
-      <h2>Payment Snapshots</h2>
+      <PageHeader title="Payment Snapshots" subtitle="View read-only payment records" />
+      <DepartmentContext />
       <div className="filter-row">
         <label>Filter by Date: </label>
         <input
@@ -68,7 +73,17 @@ const PaymentSnapshotsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s, idx) => (
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan="4">
+                  <EmptyState
+                    title="No payment snapshots"
+                    explanation="When payment snapshots are available, they will appear here."
+                    icon={"💸"}
+                  />
+                </td>
+              </tr>
+            ) : filtered.map((s, idx) => (
               <tr key={idx} onClick={() => setSelected(s)} className="clickable-row">
                 <td>{s.employee_name}</td>
                 <td>{s.status}</td>

@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { editWishlistItemQuantity, removeWishlistItem } from '../api/wishlist';
 import DecisionFrame from '../components/DecisionFrame';
 import useWishlistItems from '../hooks/useWishlistItems';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import Button from '../components/Button';
 
 const WishlistPage = () => {
-  const { data: wishlistItems = [], loading, error } = useWishlistItems();
+  const hookResult = typeof useWishlistItems === 'function' ? useWishlistItems() : { data: [], loading: false, error: null };
+  const { data: wishlistItems = [], loading, error } = hookResult || { data: [], loading: false, error: null };
   const [decisionMode, setDecisionMode] = useState(false);
   const [decisionType, setDecisionType] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -48,7 +52,7 @@ const WishlistPage = () => {
 
   return (
     <div className="container py-4">
-      <h2 className="mb-4">Your Wishlist</h2>
+      <PageHeader title="Wishlist" subtitle="Save items to revisit later" />
       {loading ? (
         <div className="alert alert-info">Loading...</div>
       ) : error ? (
@@ -57,7 +61,11 @@ const WishlistPage = () => {
         <div className="row g-3">
           {wishlistItems.length === 0 ? (
             <div className="col-12">
-              <div className="alert alert-secondary text-center">Your wishlist is empty.</div>
+              <EmptyState
+                title="No items saved"
+                explanation="Your wishlist is empty. Add favorites to keep track of them."
+                action={<Button kind="primary" onClick={() => window.location.href = '/'}>Browse catalog</Button>}
+              />
             </div>
           ) : (
             wishlistItems.map(item => (
@@ -84,8 +92,8 @@ const WishlistPage = () => {
                           Qty: <span className="fw-bold">{item.quantity}</span>
                         </div>
                         <div className="d-flex gap-2">
-                          <button className="btn btn-sm btn-outline-primary" onClick={() => openDecision('edit', item)}>Edit</button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => openDecision('remove', item)}>Remove</button>
+                          <Button kind="secondary" onClick={() => openDecision('edit', item)}>Edit quantity</Button>
+                          <Button kind="danger" onClick={() => openDecision('remove', item)}>Remove from wishlist</Button>
                         </div>
                       </div>
                     </div>
