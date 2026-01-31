@@ -33,19 +33,10 @@ AsyncSessionLocal = sessionmaker(
     autocommit=False
 )
 
-# Optionally, keep the asyncpg pool for direct connections if needed elsewhere
-import asyncpg
-_pool = None
-async def get_asyncpg_pool():
-    global _pool
-    if _pool is None:
-        _pool = await asyncpg.create_pool(dsn=db_url.replace('postgresql+asyncpg', 'postgresql'))
-    return _pool
+# Export for test usage
+engine = async_engine
 
-async def get_db_connection():
-    pool = await get_asyncpg_pool()
-    async with pool.acquire() as connection:
-        yield connection
+
 
 
 

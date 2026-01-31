@@ -21,8 +21,13 @@ from .product_comment import ProductComment  # noqa: F401
 from .product_review import ProductReview  # noqa: F401
 from .product_rating import ProductRating  # noqa: F401
 
+
 # Cart / order (optional, extend as needed)
 from .cart import Cart  # noqa: F401
 from .cart_item import CartItem  # noqa: F401
 from .order import Order  # noqa: F401
 from .order_item import OrderItem  # noqa: F401
+
+# Wishlist
+from .wishlist import Wishlist  # noqa: F401
+from .wishlist_item import WishlistItem  # noqa: F401

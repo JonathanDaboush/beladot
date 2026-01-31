@@ -2,10 +2,11 @@
   "name": "divinaPopinaV2",
   "private": true,
   "scripts": {
-    "test": "npm --prefix frontend test",
-    "start": "npm --prefix frontend start",
-    "build": "npm --prefix frontend build"
-  },
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
+},
   "dependencies": {
     "bootstrap": "^5.3.8"
   },
