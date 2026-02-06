@@ -10,6 +10,7 @@ Repository class for managing ReimbursementSnapshot entities in the database.
 Provides async CRUD operations for reimbursement snapshots by employee name.
 """
 
+from typing import Optional
 from backend.persistance.reimbursement_snapshot import ReimbursementSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,7 +24,7 @@ class ReimbursementSnapshotRepository:
         """
         self.db = db
 
-    async def get_by_employee_name(self, employee_name):
+    async def get_by_employee_name(self, employee_name: str) -> Optional[ReimbursementSnapshot]:
         """
         Retrieve a ReimbursementSnapshot by employee name.
         Args:
@@ -36,7 +37,7 @@ class ReimbursementSnapshotRepository:
         )
         return result.scalars().first()
 
-    async def save(self, snapshot):
+    async def save(self, snapshot: ReimbursementSnapshot) -> ReimbursementSnapshot:
         """
         Save a new reimbursement snapshot to the database.
         Args:
@@ -49,7 +50,7 @@ class ReimbursementSnapshotRepository:
         await self.db.refresh(snapshot)
         return snapshot
 
-    async def delete(self, employee_name):
+    async def delete(self, employee_name: str) -> bool:
         """
         Delete a reimbursement snapshot by employee name.
         Args:

@@ -7,10 +7,15 @@
 # (PTO) request by an employee. Includes PTO dates, status, and approval info.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Date, DateTime, Enum, ForeignKey
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Date, DateTime, Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 from .enums import PTOStatusEnum
+
 
 class EmployeePTO(Base):
     """
@@ -29,12 +34,25 @@ class EmployeePTO(Base):
         # Relationships to employee and manager are defined elsewhere.
     """
     __tablename__ = 'employee_pto'
-    pto_id = Column(BigInteger, primary_key=True)
-    emp_id = Column(BigInteger, ForeignKey('employee.emp_id'))
-    start_date = Column(Date)
-    end_date = Column(Date)
-    status = Column(Enum(PTOStatusEnum))
-    approved_by_manager_id = Column(BigInteger, ForeignKey('manager.manager_id'))
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    pto_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    emp_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('employee.emp_id'))
+    start_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    status: Mapped[PTOStatusEnum] = mapped_column(Enum(PTOStatusEnum))
+    approved_by_manager_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('manager.manager_id'))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in employee.py, manager.py)
+
+    def to_dict(self):
+        """Convert PTO object to dictionary."""
+        return {
+            'pto_id': self.pto_id,
+            'emp_id': self.emp_id,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'status': self.status.value if hasattr(self.status, 'value') else str(self.status),
+            'approved_by_manager_id': self.approved_by_manager_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }

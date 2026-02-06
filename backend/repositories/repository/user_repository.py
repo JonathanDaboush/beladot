@@ -11,16 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.repositories.base_repository import BaseRepository
 
+
 class UserRepository(BaseRepository[User, int]):
     def __init__(self, db: AsyncSession):
-        """
-        Initialize the repository with a database session.
-        Args:
-            db (AsyncSession): SQLAlchemy async session.
-        """
-        self.db = db
+        """Initialize repository and store session on `self.session`."""
+        super().__init__(db)
 
-    async def get(self, user_id: int) -> Optional[User]:
+    async def get(self, id: int) -> Optional[User]:
         """
         Retrieve a user by their ID.
         Args:
@@ -28,7 +25,7 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             User or None
         """
-        result = await self.db.execute(select(User).where(User.user_id == user_id))
+        result = await self.session.execute(select(User).where(User.user_id == id))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Optional[User]:
@@ -39,7 +36,7 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             User or None
         """
-        result = await self.db.execute(select(User).where(User.email == email))
+        result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
     async def list(self, *, limit: int = 100, offset: int = 0) -> List[User]:
         """
@@ -50,12 +47,13 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             List[User]
         """
-        result = await self.db.execute(
+        result = await self.session.execute(
             select(User).order_by(User.user_id).limit(limit).offset(offset)
         )
-        return result.scalars().all()
+        items: List[User] = list(result.scalars().all())
+        return items
 
-    async def add(self, user: User) -> User:
+    async def add(self, obj: User) -> User:
         """
         Add a new user to the database.
         Args:
@@ -63,12 +61,12 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             User: The added user.
         """
-        self.db.add(user)
-        await self.db.flush()
-        await self.db.refresh(user)
-        return user
+        self.session.add(obj)
+        await self.session.flush()
+        await self.session.refresh(obj)
+        return obj
 
-    async def update(self, user_id: int, user: User) -> User | None:
+    async def update(self, id: int, obj: User) -> User:
         """
         Update an existing user in the database.
         Args:
@@ -76,9 +74,9 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             User: The updated user.
         """
-        self.db.merge(user)
-        await self.db.flush()
-        return user
+        merged = await self.session.merge(obj)
+        await self.session.flush()
+        return merged
 
     async def update_password_by_email(self, email: str, new_password: str) -> bool:
         """
@@ -96,7 +94,7 @@ class UserRepository(BaseRepository[User, int]):
             return True
         return False
 
-    async def delete(self, user_id: int) -> Optional[User]:
+    async def delete(self, id: int) -> None:
         """
         Remove a user from the database by their ID.
         Args:
@@ -104,20 +102,11 @@ class UserRepository(BaseRepository[User, int]):
         Returns:
             User or None: The removed user, or None if not found.
         """
-        user = await self.get(user_id)
+        user = await self.get(id)
         if user:
-            self.db.delete(user)
-            await self.db.flush()
-        return user
-
-    async def remove_user(self, user: User) -> User:
-        """
-        Remove a user from the database.
-        Args:
-            user (User): The user to remove.
-        Returns:
-            User: The removed user.
-        """
-        self.db.delete(user)
-        await self.db.flush()
-        return user
+            await self.soft_delete(user)
+        return None
+    async def remove_user(self, user: User) -> None:
+        """Remove a user instance from the DB (non-interface helper)."""
+        await self.soft_delete(user)
+        return None

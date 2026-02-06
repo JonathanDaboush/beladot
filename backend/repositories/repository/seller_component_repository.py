@@ -5,83 +5,61 @@ Repository class for managing SellerComponent entities in the database.
 Provides async CRUD operations for seller components.
 """
 
+from typing import Optional, List
 from backend.persistance.seller_component import SellerComponent
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-class SellerComponentRepository:
-    def __init__(self, db: AsyncSession):
-        """
-        Initialize the repository with an async database session.
-        Args:
-            db (AsyncSession): SQLAlchemy async session.
-        """
-        self.db = db
+from backend.repositories.base_repository import BaseRepository
 
-    async def get_all(self):
-        """
-        Retrieve all seller components.
-        Returns:
-            list[SellerComponent]: List of seller components.
-        """
-        result = await self.db.execute(select(SellerComponent))
-        return result.scalars().all()
 
-    async def get_by_id(self, id):
-        """
-        Retrieve a seller component by ID.
-        Args:
-            id (int): The ID of the seller component.
-        Returns:
-            SellerComponent or None
-        """
-        result = await self.db.execute(select(SellerComponent).filter(SellerComponent.id == id))
+class SellerComponentRepository(BaseRepository[SellerComponent, int]):
+    def __init__(self, session: AsyncSession):
+        super().__init__(session)
+
+    UPDATABLE_FIELDS = {"img_url", "description"}
+
+    async def get(self, id: int) -> Optional[SellerComponent]:
+        result = await self.session.execute(select(SellerComponent).filter(SellerComponent.id == id))
         return result.scalars().first()
 
-    async def create(self, img_url, description):
-        """
-        Create a new seller component.
-        Args:
-            img_url (str): Image URL for the component.
-            description (str): Description of the component.
-        Returns:
-            SellerComponent: The created seller component.
-        """
+    async def list(self, *, limit: int = 100, offset: int = 0) -> List[SellerComponent]:
+        BaseRepository.validate_pagination(limit, offset)
+        result = await self.session.execute(select(SellerComponent).limit(limit).offset(offset))
+        return list(result.scalars().all())
+
+    async def add(self, obj: SellerComponent) -> SellerComponent:
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
+
+    async def update(self, id: int, obj: SellerComponent) -> SellerComponent:
+        existing = await self.get(id)
+        if not existing:
+            raise ValueError(f"SellerComponent with id {id} not found")
+        self.apply_whitelist_update(existing, obj, self.UPDATABLE_FIELDS)
+        await self.session.commit()
+        await self.session.refresh(existing)
+        return existing
+
+    async def delete(self, id: int) -> None:
+        existing = await self.get(id)
+        if existing:
+            await self.soft_delete(existing)
+        return None
+
+    async def create(self, img_url: str, description: str) -> SellerComponent:
         component = SellerComponent(img_url=img_url, description=description)
-        self.db.add(component)
-        await self.db.commit()
-        await self.db.refresh(component)
+        self.session.add(component)
+        await self.session.commit()
+        await self.session.refresh(component)
         return component
 
-    async def update(self, id, **kwargs):
-        """
-        Update a seller component by ID.
-        Args:
-            id (int): The ID of the seller component to update.
-            **kwargs: Fields to update.
-        Returns:
-            SellerComponent or None: The updated component, or None if not found.
-        """
-        component = await self.get_by_id(id)
-        if not component:
-            return None
-        for k, v in kwargs.items():
-            if hasattr(component, k):
-                setattr(component, k, v)
-        await self.db.commit()
-        return component
+    async def get_all(self) -> List[SellerComponent]:
+        """Get all seller components."""
+        return await self.list(limit=1000, offset=0)
 
-    async def delete(self, id):
-        """
-        Delete a seller component by ID.
-        Args:
-            id (int): The ID of the seller component to delete.
-        Returns:
-            bool: True if deleted, False otherwise.
-        """
-        component = await self.get_by_id(id)
-        if not component:
-            return False
-        await self.db.delete(component)
-        await self.db.commit()
-        return True
+    async def get_by_id(self, id: int) -> Optional[SellerComponent]:
+        """Get seller component by ID."""
+        return await self.get(id)

@@ -7,9 +7,13 @@
 # a payment at a specific point in time. Used for historical or auditing purposes.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, String, Numeric, DateTime
-from backend.db.base import Base
+from __future__ import annotations
+
+from typing import Optional
 import datetime
+from sqlalchemy import String, Numeric, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+from backend.db.base import Base
 
 # Base provided by backend.db.base
 
@@ -30,13 +34,13 @@ class PaymentSnapshot(Base):
         date_of_creation (DateTime): Timestamp when the snapshot was created.
     """
     __tablename__ = 'payment_snapshot'
-    id = Column(String(50), primary_key=True)
-    user_full_name = Column(String(255))
-    order_number = Column(String(50))
-    amount = Column(Numeric(12,2))
-    currency = Column(String(10))
-    payment_method = Column(String(50))
-    last4_digits = Column(String(4))
-    status = Column(String(50))
-    approved_by_name = Column(String(255))
-    date_of_creation = Column(DateTime, default=datetime.datetime.utcnow)
+    id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    user_full_name: Mapped[str] = mapped_column(String(255))
+    order_number: Mapped[str] = mapped_column(String(50))
+    amount: Mapped[float] = mapped_column(Numeric(12,2))
+    currency: Mapped[str] = mapped_column(String(10))
+    payment_method: Mapped[str] = mapped_column(String(50))
+    last4_digits: Mapped[str] = mapped_column(String(4))
+    status: Mapped[str] = mapped_column(String(50))
+    approved_by_name: Mapped[str] = mapped_column(String(255))
+    date_of_creation: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, default=datetime.datetime.utcnow)

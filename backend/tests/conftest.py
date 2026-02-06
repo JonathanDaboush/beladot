@@ -1,6 +1,6 @@
 import os
 import sys
-import asyncio
+## Removed duplicate import
 import pytest
 
 # ---------------------------------------------------------------
@@ -14,8 +14,15 @@ sys.path.insert(
 # ---------------------------------------------------------------
 # Set test database URL BEFORE importing backend
 # ---------------------------------------------------------------
-# Force test database URL to Postgres for all tests
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/divina_dev"
+# Default test database to in-memory SQLite to avoid local Postgres auth
+# issues during CI/dev runs. Override by setting `DATABASE_URL` in the
+# environment if Postgres is available and desired.
+# Force tests to use a local in-memory DB unless `TEST_DATABASE_URL` is set.
+# This ensures CI/dev runs don't attempt to use a local Postgres instance
+# with potentially mismatched credentials.
+sqlite_url = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ["IGNORE_DATABASE_URL"] = sqlite_url
+os.environ.setdefault("TEST_DATABASE_URL", sqlite_url)
 
 # Ensure environment is set for settings loading
 os.environ["ENV"] = "test"
@@ -64,33 +71,40 @@ def event_loop():
 # ---------------------------------------------------------------
 # Reset database schema before tests (drop -> create)
 # ---------------------------------------------------------------
+import asyncio
 @pytest.fixture(scope="session", autouse=True)
-def init_db(event_loop):
-    # Import persistence models so metadata has all tables
-    import backend.persistance.department
-    import backend.persistance.user
-    import backend.persistance.employee
-    import backend.persistance.manager
-    import backend.persistance.shift
-    import backend.persistance.incident
-    import backend.persistance.cart
-    import backend.persistance.order
-    import backend.persistance.shipment
-    import backend.persistance.product
-    import backend.persistance.product_variant
-    import backend.persistance.order_item
-    import backend.persistance.shipment_item
-    import backend.persistance.category
-    import backend.persistance.subcategory
-    import backend.persistance.product_image
-    import backend.persistance.product_variant_image
-    import backend.persistance.wishlist
-    import backend.persistance.wishlist_item
+def init_db(event_loop: asyncio.AbstractEventLoop):
+    # Import all persistence models to populate Base.metadata
+    import backend.persistance  # This triggers all model imports in __init__.py
 
     async def _setup():
         async with engine.begin() as conn:
-            # Clear existing schema and data
-            await conn.run_sync(Base.metadata.drop_all)
+            def drop_all_sqlite_tables(connection):
+                # Get all table names
+                from sqlalchemy import inspect
+                inspector = inspect(connection)
+                tables = inspector.get_table_names()
+                
+                # Disable foreign key constraints temporarily
+                connection.execute(text("PRAGMA foreign_keys = OFF"))
+                
+                # Drop each table
+                for table in tables:
+                    connection.execute(text(f'DROP TABLE IF EXISTS "{table}"'))
+                
+                # Re-enable foreign key constraints
+                connection.execute(text("PRAGMA foreign_keys = ON"))
+
+            # Import text for raw SQL
+            from sqlalchemy import text
+            
+            # Drop all tables using SQLite-specific approach for clean slate
+            if "sqlite" in str(conn.dialect.name).lower():
+                await conn.run_sync(drop_all_sqlite_tables)
+            else:
+                # For other databases, use metadata drop_all
+                await conn.run_sync(Base.metadata.drop_all)
+            
             # Recreate schema to ensure all tables exist before tests
             await conn.run_sync(Base.metadata.create_all)
 
@@ -102,7 +116,7 @@ def init_db(event_loop):
 # Database cleanup after all tests
 # ---------------------------------------------------------------
 @pytest.fixture(scope="session", autouse=True)
-def cleanup_db(event_loop):
+def cleanup_db(event_loop: asyncio.AbstractEventLoop):
     yield
     async def _cleanup():
         async with engine.begin() as conn:

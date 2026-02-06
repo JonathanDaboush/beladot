@@ -7,6 +7,7 @@
 # Provides async CRUD methods for PTO snapshots.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.pto_snapshot import PTOSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -20,21 +21,21 @@ class PTOSnapshotRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_employee_name(self, employee_name):
+    async def get_by_employee_name(self, employee_name: str) -> Optional[PTOSnapshot]:
         """Retrieve a PTO snapshot by employee name."""
         result = await self.db.execute(
             select(PTOSnapshot).filter(PTOSnapshot.employee_name == employee_name)
         )
         return result.scalars().first()
 
-    async def save(self, snapshot):
+    async def save(self, snapshot: PTOSnapshot) -> PTOSnapshot:
         """Save a new PTO snapshot to the database."""
         self.db.add(snapshot)
         await self.db.commit()
         await self.db.refresh(snapshot)
         return snapshot
 
-    async def delete(self, employee_name):
+    async def delete(self, employee_name: str) -> bool:
         """Delete a PTO snapshot by employee name."""
         snapshot = await self.get_by_employee_name(employee_name)
         if snapshot:

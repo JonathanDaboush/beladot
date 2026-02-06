@@ -1,15 +1,14 @@
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+import asyncio
 from sqlalchemy import delete
-from backend.persistance.base import get_sessionmaker
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.persistance.user import User
 
-def main():
-    Session = get_sessionmaker()
-    with Session() as session:
-        session.execute(delete(User))
-        session.commit()
+async def main() -> None:
+    async with AsyncSessionLocal() as session:
+        await session.execute(delete(User))
+        await session.commit()
     print("Cleared all users from users table.")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

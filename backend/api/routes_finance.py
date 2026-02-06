@@ -29,17 +29,18 @@ def require_role(role: str):
 # -------------------------------------------------
 # Dummy finance service (IMPORT-SAFE)
 # -------------------------------------------------
+from typing import Any
 class DummyFinanceService:
-    async def get_issues_catalog(self, employee_id: int):
+    async def get_issues_catalog(self, employee_id: int) -> list[Any]:
         return []
 
-    async def create_issue(self, employee_id: int, **kwargs):
+    async def create_issue(self, employee_id: int, **kwargs: Any) -> dict[str, Any]:
         return {**kwargs, "id": 1}
 
-    async def update_issue(self, issue_id: int, **kwargs):
+    async def update_issue(self, issue_id: int, **kwargs: Any) -> dict[str, Any]:
         return {**kwargs, "id": issue_id}
 
-    async def delete_issue(self, issue_id: int):
+    async def delete_issue(self, issue_id: int) -> dict[str, Any]:
         return {"id": issue_id, "deleted": True}
 
 async def get_finance_services():
@@ -51,9 +52,9 @@ async def get_finance_services():
 
 @router.get("/issues", response_model=List[FinanceIssueResponse])
 async def get_issues(
-    finance_services=Depends(get_finance_services),
-    identity=Depends(require_role("employee")),
-):
+    finance_services: DummyFinanceService = Depends(get_finance_services),
+    identity: dict[str, Any] = Depends(require_role("employee")),
+) -> list[Any]:
     return await finance_services.get_issues_catalog(
         employee_id=identity["employee_id"]
     )
@@ -61,9 +62,9 @@ async def get_issues(
 @router.post("/issues", response_model=FinanceIssueResponse)
 async def create_issue(
     issue: FinanceIssueCreate,
-    finance_services=Depends(get_finance_services),
-    identity=Depends(require_role("employee")),
-):
+    finance_services: DummyFinanceService = Depends(get_finance_services),
+    identity: dict[str, Any] = Depends(require_role("employee")),
+) -> dict[str, Any]:
     return await finance_services.create_issue(
         employee_id=identity["employee_id"],
         **issue.model_dump(),
@@ -73,9 +74,9 @@ async def create_issue(
 async def update_issue(
     issue_id: int,
     update: FinanceIssueUpdate,
-    finance_services=Depends(get_finance_services),
-    identity=Depends(require_role("employee")),
-):
+    finance_services: DummyFinanceService = Depends(get_finance_services),
+    identity: dict[str, Any] = Depends(require_role("employee")),
+) -> dict[str, Any]:
     return await finance_services.update_issue(
         issue_id,
         **update.model_dump(),
@@ -84,9 +85,9 @@ async def update_issue(
 @router.delete("/issues/{issue_id}")
 async def delete_issue(
     issue_id: int,
-    finance_services=Depends(get_finance_services),
-    identity=Depends(require_role("employee")),
-):
+    finance_services: DummyFinanceService = Depends(get_finance_services),
+    identity: dict[str, Any] = Depends(require_role("employee")),
+) -> dict[str, Any]:
     return await finance_services.delete_issue(issue_id)
 
 @router.put(
@@ -96,8 +97,8 @@ async def delete_issue(
 async def update_reimbursement(
     reimbursement_id: int,
     update: FinanceReimbursementUpdate,
-    finance_services=Depends(get_finance_services),
-    identity=Depends(require_role("employee")),
-):
+    finance_services: DummyFinanceService = Depends(get_finance_services),
+    identity: dict[str, Any] = Depends(require_role("employee")),
+) -> dict[str, Any]:
     return {**update.model_dump(), "id": reimbursement_id}
 

@@ -10,6 +10,7 @@ Repository class for managing SickDaySnapshot entities in the database.
 Provides async CRUD operations for sick day snapshots by employee name.
 """
 
+from typing import Optional
 from backend.persistance.sickday_snapshot import SickDaySnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,7 +24,7 @@ class SickDaySnapshotRepository:
         """
         self.db = db
 
-    async def get_by_employee_name(self, employee_name):
+    async def get_by_employee_name(self, employee_name: str) -> Optional[SickDaySnapshot]:
         """
         Retrieve a SickDaySnapshot by employee name.
         Args:
@@ -36,7 +37,7 @@ class SickDaySnapshotRepository:
         )
         return result.scalars().first()
 
-    async def save(self, snapshot):
+    async def save(self, snapshot: SickDaySnapshot) -> SickDaySnapshot:
         """
         Save a new sick day snapshot to the database.
         Args:
@@ -49,7 +50,7 @@ class SickDaySnapshotRepository:
         await self.db.refresh(snapshot)
         return snapshot
 
-    async def delete(self, employee_name):
+    async def delete(self, employee_name: str) -> bool:
         """
         Delete a sick day snapshot by employee name.
         Args:

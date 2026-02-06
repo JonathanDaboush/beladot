@@ -8,7 +8,8 @@
 # component is linked to a department.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey
+from sqlalchemy import BigInteger, String, Integer, ForeignKey, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
 from backend.persistance.base import Base
 
 class EmployeeComponent(Base):
@@ -23,7 +24,8 @@ class EmployeeComponent(Base):
         department_id (Integer): Foreign key referencing the department.
     """
     __tablename__ = 'employee_component'
-    id = Column(BigInteger, primary_key=True)
-    img_url = Column(String(255))
-    description = Column(String(255))
-    department_id = Column(Integer, ForeignKey('department.department_id'), nullable=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    img_url: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(String(255))
+    department_id: Mapped[int] = mapped_column(Integer, ForeignKey('department.department_id'), nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

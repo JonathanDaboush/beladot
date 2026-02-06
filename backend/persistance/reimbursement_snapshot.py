@@ -8,8 +8,14 @@
 # or auditing purposes.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, String, Float, BigInteger, DateTime, Text
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import String, Float, BigInteger, DateTime, Text
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
+
 
 class ReimbursementSnapshot(Base):
     """
@@ -24,8 +30,8 @@ class ReimbursementSnapshot(Base):
         created_at (DateTime): Timestamp when the snapshot was created.
     """
     __tablename__ = 'reimbursement_snapshot'
-    employee_name = Column(String(255), primary_key=True)
-    incident_number = Column(BigInteger)
-    amount = Column(Float)
-    description = Column(Text)
-    created_at = Column(DateTime)
+    employee_name: Mapped[str] = mapped_column(String(255), primary_key=True)
+    incident_number: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)

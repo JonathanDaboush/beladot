@@ -7,21 +7,28 @@
 # ------------------------------------------------------------------------------
 
 from backend.db.base import Base
-# Ensure all model modules are imported to populate Base.metadata
-import backend.persistance as _models  # noqa: F401
+# Import for model registration side effects (Base.metadata population)
+import backend.persistance as _models
+from backend.config import settings
 
+# reference imports to satisfy linters/static checkers (side-effect imports)
+_ = _models
+_ = Base
+
+from typing import Any
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker, Session
 
 # Base is provided by backend.db.base (single declarative registry)
 
-def get_engine():
+
+def get_engine() -> Engine:
 	"""
 	Create and return a synchronous SQLAlchemy Engine using the configured DATABASE_URL.
 	This defers environment access until runtime, avoiding import-time failures.
 	"""
-	from backend.config import _load_settings
-	settings = _load_settings()
+	# Use application settings (imported at module level) to get DATABASE_URL
 	_configured_url = settings.DATABASE_URL
 	if "+aiosqlite" in _configured_url:
 		_sync_url = _configured_url.replace("+aiosqlite", "")
@@ -31,7 +38,8 @@ def get_engine():
 		_sync_url = _configured_url
 	return create_engine(_sync_url)
 
-def get_sessionmaker():
+
+def get_sessionmaker() -> sessionmaker[Session]:
 	"""
 	Return a configured sessionmaker bound to the runtime-created Engine.
 	"""
@@ -43,7 +51,7 @@ class _LazySyncEngineProxy:
 	Provides an `engine` symbol for compatibility while deferring actual
 	engine creation until first attribute access.
 	"""
-	def __getattr__(self, name):
+	def __getattr__(self, name: str) -> Any:
 		return getattr(get_engine(), name)
 
 # Public symbol expected by some tests (`engine`)
@@ -54,7 +62,7 @@ class _LazySessionLocal:
 
 	Exposes a `SessionLocal` symbol compatible with legacy imports in tests.
 	"""
-	def __call__(self, *args, **kwargs):
+	def __call__(self, *args: Any, **kwargs: Any) -> Session:
 		return get_sessionmaker()(*args, **kwargs)
 
 # Public symbol expected by tests (`SessionLocal`)

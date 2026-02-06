@@ -4,9 +4,10 @@ import shutil
 from typing import Dict, List, Tuple
 from difflib import SequenceMatcher
 
-from sqlalchemy import select
 
-from backend.persistance.base import get_sessionmaker
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.db.init_schema import ensure_sqlite_schema
 from backend.persistance.user import User
 from backend.persistance.category import Category
@@ -133,74 +134,70 @@ def safe_email_filename(email: str) -> str:
     return base + ".jpg"
 
 
-def assign_user_images(session):
+async def assign_user_images(session: AsyncSession):
     files = [f for f in os.listdir(USER_IMAGES_DIR) if os.path.isfile(os.path.join(USER_IMAGES_DIR, f))]
     files.sort()
     if not files:
         return []
-    users = session.execute(select(User).order_by(User.email)).scalars().all()
+    users = [u async for u in (await session.stream_scalars(select(User).order_by(User.email)))]
     assigned = []
     for i, u in enumerate(users):
         src_name = files[i % len(files)]
         dst_name = safe_email_filename(u.email)
         src_path = os.path.join(USER_IMAGES_DIR, src_name)
         dst_path = os.path.join(USER_IMAGES_DIR, dst_name)
-        # Copy or overwrite to ensure filename reflects the email
-        # Avoid copying if source and destination resolve to the same file
         if os.path.abspath(src_path) != os.path.abspath(dst_path):
             shutil.copyfile(src_path, dst_path)
         u.img_location = os.path.join("images", "user_images", dst_name)
         assigned.append((u.email, u.img_location))
-    session.flush()
+    await session.flush()
     return assigned
 
 
-def assign_category_images(session):
+async def assign_category_images(session: AsyncSession):
     entries = build_file_entries(CATS_DIR_CANDIDATES)
     updated = []
-    cats = session.execute(select(Category)).scalars().all()
+    cats = [c async for c in (await session.stream_scalars(select(Category)))]
     for c in cats:
         rel_path = find_best_entry(c.name or "", entries)
         if rel_path:
-            # Store path relative to static root (backend/images)
             c.image_url = rel_path.replace("\\", "/")
             updated.append((c.name, c.image_url))
-    session.flush()
+    await session.flush()
     return updated
 
 
-def assign_subcategory_images(session):
+async def assign_subcategory_images(session: AsyncSession):
     entries = build_file_entries(CATS_DIR_CANDIDATES)
     updated = []
-    subs = session.execute(select(Subcategory)).scalars().all()
+    subs = [s async for s in (await session.stream_scalars(select(Subcategory)))]
     for s in subs:
         rel_path = find_best_entry(s.name or "", entries)
         if rel_path:
-            # Store path relative to static root (backend/images)
             s.image_url = rel_path.replace("\\", "/")
             updated.append((s.name, s.image_url))
-    session.flush()
+    await session.flush()
     return updated
 
 
-def _get_used_paths(session) -> set[str]:
+async def _get_used_paths(session: AsyncSession) -> set[str]:
     used = set()
-    for (p,) in session.execute(select(Category.image_url)).all():
+    for p in [v async for v in (await session.stream_scalars(select(Category.image_url)))]:
         if p:
             used.add(p)
-    for (p,) in session.execute(select(Subcategory.image_url)).all():
+    for p in [v async for v in (await session.stream_scalars(select(Subcategory.image_url)))]:
         if p:
             used.add(p)
     return used
 
 
-def assign_prefer_unused_for_targets(session, target_category_names: list[str]):
+async def assign_prefer_unused_for_targets(session: AsyncSession, target_category_names: list[str]):
     """
     For specified categories (by name) and their subcategories, fill only MISSING images
     by preferring entries whose images are currently unused anywhere.
     """
     entries = build_file_entries(CATS_DIR_CANDIDATES)
-    used = _get_used_paths(session)
+    used = await _get_used_paths(session)
     # Build a list of candidate entries that are not used
     unused_entries = [e for e in entries if e[1] not in used]
 
@@ -212,49 +209,46 @@ def assign_prefer_unused_for_targets(session, target_category_names: list[str]):
         return find_best_entry(name, entries)
 
     # Categories first
-    cats = session.execute(select(Category).where(Category.name.in_(target_category_names))).scalars().all()
+    cats = [c async for c in (await session.stream_scalars(select(Category).where(Category.name.in_(target_category_names))))]
     for c in cats:
         if not c.image_url:
             rel = pick(c.name or "")
             if rel:
                 c.image_url = rel.replace("\\", "/")
-                used.add(c.image_url)
-    session.flush()
+                img_url = c.image_url
+                if img_url:  # Type narrowing
+                    used.add(img_url)
+    await session.flush()
 
     # Subcategories under those categories (Electronics, Computers, etc.)
     if cats:
         cat_ids = [c.category_id for c in cats]
-        subs = session.execute(select(Subcategory).where(Subcategory.category_id.in_(cat_ids))).scalars().all()
+        subs = [s async for s in (await session.stream_scalars(select(Subcategory).where(Subcategory.category_id.in_(cat_ids))))]
         for s in subs:
             if not s.image_url:
                 rel = pick(s.name or "")
                 if rel:
                     s.image_url = rel.replace("\\", "/")
-                    used.add(s.image_url)
-        session.flush()
+                    img_url = s.image_url
+                    if img_url:  # Type narrowing
+                        used.add(img_url)
+        await session.flush()
 
 
-def main():
+import asyncio
+
+async def main() -> None:
     ensure_sqlite_schema()
-    Session = get_sessionmaker()
-    with Session() as session:
-        user_assign = assign_user_images(session)
-        cat_assign = assign_category_images(session)
-        sub_assign = assign_subcategory_images(session)
-        session.commit()
+    async with AsyncSessionLocal() as session:
+        user_assign = await assign_user_images(session)
+        cat_assign = await assign_category_images(session)
+        sub_assign = await assign_subcategory_images(session)
+        await session.commit()
 
     print("\n=== Image Assignment Summary ===")
     print(f"Users updated: {len(user_assign)}")
     print(f"Categories updated: {len(cat_assign)}")
     print(f"Subcategories updated: {len(sub_assign)}")
 
-    # Show a few examples
-    for role, (name, path_list) in {
-        "Category": (cat_assign[:5], ""),
-        "Subcategory": (sub_assign[:5], ""),
-    }.items():
-        pass
-
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

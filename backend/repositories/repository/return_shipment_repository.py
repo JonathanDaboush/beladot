@@ -8,6 +8,7 @@ Repository class for managing ReturnShipment entities in the database.
 Provides async method for retrieving return shipments by ID.
 """
 
+from typing import Optional
 from backend.persistance.return_shipment import ReturnShipment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -21,7 +22,7 @@ class ReturnShipmentRepository:
         """
         self.db = db
 
-    async def get_by_id(self, return_shipment_id):
+    async def get_by_id(self, return_shipment_id: int) -> Optional[ReturnShipment]:
         """
         Retrieve a ReturnShipment by its ID.
         Args:

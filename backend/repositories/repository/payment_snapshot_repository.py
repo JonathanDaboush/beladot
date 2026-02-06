@@ -6,6 +6,7 @@
 # Provides async methods for retrieving payment snapshots by order number.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.payment_snapshot import PaymentSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,7 +20,7 @@ class PaymentSnapshotRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, order_number):
+    async def get_by_id(self, order_number: int) -> Optional[PaymentSnapshot]:
         """Retrieve a payment snapshot by order number."""
         result = await self.db.execute(
             select(PaymentSnapshot).filter(PaymentSnapshot.order_number == order_number)

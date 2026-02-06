@@ -10,6 +10,7 @@ Repository class for managing ShippingSnapshot entities in the database.
 Provides async CRUD operations for shipping snapshots.
 """
 
+from typing import Optional
 from backend.persistance.shipping_snapshot import ShippingSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,7 +24,7 @@ class ShippingSnapshotRepository:
         """
         self.db = db
 
-    async def get_by_id(self, snapshot_id):
+    async def get_by_id(self, snapshot_id: int) -> Optional[ShippingSnapshot]:
         """
         Retrieve a shipping snapshot by its ID.
         Args:
@@ -36,7 +37,7 @@ class ShippingSnapshotRepository:
         )
         return result.scalars().first()
 
-    async def save(self, snapshot):
+    async def save(self, snapshot: ShippingSnapshot) -> ShippingSnapshot:
         """
         Save a new shipping snapshot to the database.
         Args:
@@ -49,7 +50,7 @@ class ShippingSnapshotRepository:
         await self.db.refresh(snapshot)
         return snapshot
 
-    async def delete(self, snapshot_id):
+    async def delete(self, snapshot_id: int) -> bool:
         """
         Delete a shipping snapshot by ID.
         Args:

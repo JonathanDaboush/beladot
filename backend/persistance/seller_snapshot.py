@@ -7,7 +7,11 @@
 # seller's details at a specific point in time. Used for historical or auditing purposes.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, String
+from __future__ import annotations
+
+from typing import Optional
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from backend.db.base import Base
 
 class SellerSnapshot(Base):
@@ -22,7 +26,7 @@ class SellerSnapshot(Base):
         approved_by_name (String): Name of the person who approved the seller.
     """
     __tablename__ = 'seller_snapshot'
-    store_name = Column(String(255), primary_key=True)
-    contact_email = Column(String(255))
-    seller_type = Column(String(50))
-    approved_by_name = Column(String(255))
+    store_name: Mapped[str] = mapped_column(String(255), primary_key=True)
+    contact_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    seller_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    approved_by_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

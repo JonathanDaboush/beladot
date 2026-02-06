@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, HTTPException, BackgroundTasks
+from backend.infrastructure.structured_logging import logger
 import os, shutil, uuid
 from typing import Optional
 from backend.infrastructure.file_validation import validate_upload_file
@@ -22,7 +23,11 @@ async def upload_image(file: UploadFile, background_tasks: BackgroundTasks):
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         os.rename(temp_path, final_path)
-    except Exception:
+    except Exception as e:
+        try:
+            logger.exception("upload.save_failed", temp_path=temp_path, final_path=final_path, error=str(e))
+        except Exception:
+            pass
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail="Failed to save file")
@@ -41,14 +46,26 @@ async def upload_product_image(product_id: int, file: UploadFile, background_tas
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         os.rename(temp_path, final_path)
-    except Exception:
+    except Exception as e:
+        try:
+            logger.exception("upload.product_save_failed", temp_path=temp_path, final_path=final_path, product_id=product_id, error=str(e))
+        except Exception:
+            pass
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise HTTPException(status_code=500, detail="Failed to save file")
     url = f"/static/uploads/product_{product_id}/{filename}"
     return {"image_url": url, "image_id": filename}
 
-def delete_uploaded_image(image_id: str, product_id: Optional[int] = None):
+def delete_uploaded_image(image_id: Optional[str] = None, product_id: Optional[int] = None):
+    if not image_id and not product_id:
+        return
+    if product_id and not image_id:
+        # Delete entire product folder
+        dir_path = os.path.join(UPLOAD_ROOT, f"product_{product_id}")
+        if os.path.exists(dir_path) and os.path.isdir(dir_path):
+            shutil.rmtree(dir_path)
+        return
     if product_id:
         path = os.path.join(UPLOAD_ROOT, f"product_{product_id}", image_id)
     else:

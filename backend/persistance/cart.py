@@ -8,26 +8,26 @@
 # update times. Relationships to cart items are defined in cart_item.py.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, Integer, BigInteger, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+
+from __future__ import annotations
+
+from typing import Optional, List, TYPE_CHECKING
+import datetime
+
+from sqlalchemy import Integer, BigInteger, DateTime, ForeignKey, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 
-class Cart(Base):
-    """
-    ORM model for the 'cart' table.
-    Represents a user's shopping cart, which can contain multiple items.
+if TYPE_CHECKING:
+    from .cart_item import CartItem
 
-    Attributes:
-        cart_id (BigInteger): Primary key for the cart.
-        user_id (BigInteger): Foreign key referencing the user who owns the cart.
-        created_at (DateTime): Timestamp when the cart was created.
-        updated_at (DateTime): Timestamp when the cart was last updated.
-        # Relationships to cart items are defined in cart_item.py.
-    """
+
+class Cart(Base):
     __tablename__ = 'cart'
-    # Use Integer for SQLite autoincrement primary key behavior
-    cart_id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    # Relationships (to be completed in cart_item.py)
+    cart_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    items: Mapped[List['CartItem']] = relationship('CartItem', back_populates='cart', cascade='all, delete-orphan')
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

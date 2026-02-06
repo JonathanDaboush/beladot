@@ -8,6 +8,7 @@ Repository class for managing SellerReviewResponse entities in the database.
 Provides async method for retrieving seller review responses by ID.
 """
 
+from typing import Optional
 from backend.persistance.seller_review_response import SellerReviewResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -21,7 +22,7 @@ class SellerReviewResponseRepository:
         """
         self.db = db
 
-    async def get_by_id(self, response_id):
+    async def get_by_id(self, response_id: int) -> Optional[SellerReviewResponse]:
         """
         Retrieve a seller review response by its ID.
         Args:

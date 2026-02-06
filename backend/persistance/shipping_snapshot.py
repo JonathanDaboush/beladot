@@ -5,22 +5,29 @@ SQLAlchemy ORM model for the shipping_snapshot table.
 Represents a snapshot of a shipment, including events, items, and total cost.
 """
 
-from sqlalchemy import Column, BigInteger, String, Float, DateTime, Text, ForeignKey
-from sqlalchemy.orm import relationship
+
+from __future__ import annotations
+
+from typing import List, Dict, Any, Optional
+import datetime
+
+from sqlalchemy import BigInteger, String, Float, DateTime, Text, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 import json
 
 class ShippingSnapshot(Base):
     __tablename__ = 'shipping_snapshot'
-    snapshot_id = Column(BigInteger, primary_key=True)
-    shipment_id = Column(BigInteger, ForeignKey('shipment.shipment_id'), nullable=False)
-    status = Column(String(32), nullable=False)  # 'complete', 'partial', 'failed'
-    events = Column(Text, nullable=False, default='[]')  # JSON string of event dicts
-    items = Column(Text, nullable=False, default='[]')   # JSON string of item dicts
-    total_cost = Column(Float)
-    created_at = Column(DateTime)
+    snapshot_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    shipment_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('shipment.shipment_id'), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)  # 'complete', 'partial', 'failed'
+    events: Mapped[str] = mapped_column(Text, nullable=False, default='[]')  # JSON string of event dicts
+    items: Mapped[str] = mapped_column(Text, nullable=False, default='[]')   # JSON string of item dicts
+    total_cost: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
 
-    def set_events(self, events_list):
+    def set_events(self, events_list: List[Dict[str, Any]]) -> None:
         """
         Set the events field as a JSON string from a list.
         Args:
@@ -28,7 +35,7 @@ class ShippingSnapshot(Base):
         """
         self.events = json.dumps(events_list)
 
-    def get_events(self):
+    def get_events(self) -> List[Dict[str, Any]]:
         """
         Get the events field as a list from JSON string.
         Returns:
@@ -36,7 +43,7 @@ class ShippingSnapshot(Base):
         """
         return json.loads(self.events) if self.events else []
 
-    def set_items(self, items_list):
+    def set_items(self, items_list: List[Dict[str, Any]]) -> None:
         """
         Set the items field as a JSON string from a list.
         Args:
@@ -44,7 +51,7 @@ class ShippingSnapshot(Base):
         """
         self.items = json.dumps(items_list)
 
-    def get_items(self):
+    def get_items(self) -> List[Dict[str, Any]]:
         """
         Get the items field as a list from JSON string.
         Returns:

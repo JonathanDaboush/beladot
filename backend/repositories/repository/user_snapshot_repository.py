@@ -8,6 +8,8 @@ Repository class for managing UserSnapshot entities in the database.
 Provides async method for retrieving user snapshots by full name.
 """
 
+from typing import Optional
+
 from backend.persistance.user_snapshot import UserSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -21,13 +23,13 @@ class UserSnapshotRepository:
         """
         self.db = db
 
-    async def get_by_id(self, full_name):
+    async def get_by_id(self, full_name: str) -> Optional[UserSnapshot]:
         """
         Retrieve a user snapshot by full name.
         Args:
             full_name (str): The full name of the user.
         Returns:
-            UserSnapshot or None
+            Optional[UserSnapshot]
         """
         result = await self.db.execute(
             select(UserSnapshot).filter(UserSnapshot.full_name == full_name)

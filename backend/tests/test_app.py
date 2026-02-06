@@ -1,8 +1,8 @@
+
+from fastapi.testclient import TestClient
 import sys
 import os
 import pytest
-from fastapi.testclient import TestClient
-
 # Ensure backend is importable when running from project root
 sys.path.insert(
     0,
@@ -12,7 +12,14 @@ sys.path.insert(
 # -------------------------------------------------------------------
 # FIXTURE: FastAPI client (DELAYED app import)
 # -------------------------------------------------------------------
-
+@pytest.fixture(scope="function")
+def setup_test_database():
+    # Tests already use the session-scoped conftest.py init_db fixture
+    # which creates all tables via Base.metadata.create_all()
+    # This fixture now just yields without doing anything since the DB is already set up
+    yield
+    
+    
 @pytest.fixture(scope="session")
 def client():
     from backend.app import app
@@ -20,83 +27,36 @@ def client():
 
 
 # -------------------------------------------------------------------
-# FIXTURE: Database setup (explicit, not autouse)
+# (No extra duplicate fixtures)
 # -------------------------------------------------------------------
-
-@pytest.fixture(scope="session")
-def setup_test_database():
-    from alembic.config import Config
-    from alembic import command
-
-    # Use a synchronous SQLite URL for Alembic
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/divina_dev"
-
-    alembic_cfg = Config(
-        os.path.join(os.path.dirname(__file__), "../../alembic.ini")
-    )
-    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../migrations"))
-    alembic_cfg.set_main_option("script_location", migrations_dir)
-    command.upgrade(alembic_cfg, "head")
-
-    # Import models so SQLAlchemy metadata is registered
-    import backend.persistance.department
-    import backend.persistance.user
-    import backend.persistance.employee
-    import backend.persistance.manager
-    import backend.persistance.shift
-    import backend.persistance.incident
-    import backend.persistance.cart
-    import backend.persistance.order
-    import backend.persistance.shipment
-    import backend.persistance.product
-    import backend.persistance.product_variant
-    import backend.persistance.order_item
-    import backend.persistance.shipment_item
-    import backend.persistance.category
-    import backend.persistance.subcategory
-    import backend.persistance.product_image
-    import backend.persistance.product_variant_image
-    import backend.persistance.wishlist
-    import backend.persistance.wishlist_item
-
-    # Ensure all ORM models are materialized in the test database
-    # using the synchronous engine that points to the same SQLite file.
-    from backend.persistance.base import Base, engine as sync_engine
-    # Start from a clean slate to avoid cross-test contamination
-    Base.metadata.drop_all(bind=sync_engine)
-    Base.metadata.create_all(bind=sync_engine)
-    import backend.persistance.payment
-    import backend.persistance.payment_snapshot
-
-    yield
 
 
 # -------------------------------------------------------------------
 # BASIC API TESTS
 # -------------------------------------------------------------------
 
-def test_api_finance_issues_catalog(client):
+def test_api_finance_issues_catalog(client: TestClient):
     response = client.get("/api/finance/issues")
     assert response.status_code in (200, 401)
 
 
-def test_api_finance_create_issue_missing_fields(client):
+def test_api_finance_create_issue_missing_fields(client: TestClient):
     response = client.post("/api/finance/issues", json={})
     assert response.status_code in (400, 401)
     assert "detail" in response.json()
 
 
-def test_api_employee_components_for_employee_forbidden(client):
+def test_api_employee_components_for_employee_forbidden(client: TestClient):
     response = client.get("/api/employee_components/for_employee")
     assert response.status_code in (401, 403)
 
 
-def test_api_get_cart_items(client):
+def test_api_get_cart_items(client: TestClient):
     response = client.get("/api/get_cart_items")
     assert response.status_code in (200, 401)
 
 
-def test_api_add_item_to_cart_missing(client):
+def test_api_add_item_to_cart_missing(client: TestClient):
     response = client.post("/api/add_item_to_cart", json={})
     assert response.status_code in (400, 401)
 
@@ -106,9 +66,10 @@ def test_api_add_item_to_cart_missing(client):
 # -------------------------------------------------------------------
 
 def test_api_manager_edit_employee_info(
-    setup_test_database, client, monkeypatch
+    setup_test_database: object, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
-    from backend.persistance.base import SessionLocal
+    import asyncio
+    from backend.persistance.async_base import AsyncSessionLocal
     from backend.persistance.department import Department
     from backend.persistance.user import User
     from backend.persistance.manager import Manager
@@ -116,60 +77,62 @@ def test_api_manager_edit_employee_info(
     from backend.persistance.shift import Shift
     import datetime as dt
 
-    db = SessionLocal()
+    async def _seed():
+        async with AsyncSessionLocal() as db:
+            db.add(Department(department_id=1, name="Test Department"))
 
-    db.add(Department(department_id=1, name="Test Department"))
+            db.add_all([
+                User(
+                    user_id=1,
+                    full_name="Manager User",
+                    dob=dt.date(1990, 1, 1),
+                    password="pass",
+                    phone_number="123",
+                    email="manager@example.com",
+                    created_at=dt.date.today(),
+                    img_location="",
+                    account_status="True",
+                ),
+                User(
+                    user_id=2,
+                    full_name="Employee User",
+                    dob=dt.date(1992, 2, 2),
+                    password="pass",
+                    phone_number="456",
+                    email="employee@example.com",
+                    created_at=dt.date.today(),
+                    img_location="",
+                    account_status="True",
+                ),
+            ])
 
-    db.add_all([
-        User(
-            user_id=1,
-            full_name="Manager User",
-            dob=dt.date(1990, 1, 1),
-            password="pass",
-            phone_number="123",
-            email="manager@example.com",
-            created_at=dt.date.today(),
-            img_location="",
-            account_status="True",
-        ),
-        User(
-            user_id=2,
-            full_name="Employee User",
-            dob=dt.date(1992, 2, 2),
-            password="pass",
-            phone_number="456",
-            email="employee@example.com",
-            created_at=dt.date.today(),
-            img_location="",
-            account_status="True",
-        ),
-    ])
+            db.add_all([
+                Manager(
+                    manager_id=1,
+                    user_id=1,
+                    department_id=1,
+                    is_active=True,
+                    created_at=dt.datetime.now(),
+                    last_active_at=dt.datetime.now(),
+                ),
+                Employee(emp_id=1, user_id=2, department_id=1),
+            ])
 
-    db.add_all([
-        Manager(
-            manager_id=1,
-            user_id=1,
-            department_id=1,
-            is_active=True,
-            created_at=dt.datetime.now(),
-            last_active_at=dt.datetime.now(),
-        ),
-        Employee(emp_id=1, user_id=2, department_id=1),
-    ])
+            from backend.persistance.enums import ShiftStatusEnum
+            db.add(
+                Shift(
+                    shift_id=1,
+                    emp_id=1,
+                    start_time=dt.datetime.now(),
+                    end_time=dt.datetime.now() + dt.timedelta(hours=8),
+                    created_by_manager_id=1,
+                    status=ShiftStatusEnum.scheduled,
+                )
+            )
 
-    db.add(
-        Shift(
-            department_id=1,
-            assigned_emp_id=None,
-            start_time=dt.datetime.now(),
-            end_time=dt.datetime.now() + dt.timedelta(hours=8),
-            created_by_manager_id=1,
-            status="scheduled",
-        )
-    )
+            await db.commit()
 
-    db.commit()
-    db.close()
+    asyncio.run(_seed())
 
     import backend.services.managerServices as manager_services
     monkeypatch.setattr(
@@ -188,13 +151,72 @@ def test_api_manager_edit_employee_info(
     assert response.status_code in (200, 401)
 
 
-def test_api_employee_book_shift(setup_test_database, client):
-    from backend.persistance.base import SessionLocal
+def test_api_employee_book_shift(setup_test_database: object, client: TestClient):
+    import asyncio
+    from backend.persistance.async_base import AsyncSessionLocal
     from backend.persistance.shift import Shift
+    from backend.persistance.department import Department
+    from backend.persistance.user import User
+    from backend.persistance.manager import Manager
+    from backend.persistance.employee import Employee
+    from backend.persistance.enums import ShiftStatusEnum
+    from sqlalchemy import select
+    import datetime as dt
 
-    db = SessionLocal()
-    shift = db.query(Shift).order_by(Shift.shift_id.desc()).first()
-    db.close()
+    async def _seed():
+        async with AsyncSessionLocal() as db:
+            # Setup test data
+            db.add(Department(department_id=1, name="Test Department"))
+            db.add_all([
+                User(
+                    user_id=1,
+                    full_name="Manager User",
+                    dob=dt.date(1990, 1, 1),
+                    password="pass",
+                    phone_number="123",
+                    email="manager2@example.com",
+                    created_at=dt.date.today(),
+                    img_location="",
+                    account_status="True",
+                ),
+                User(
+                    user_id=2,
+                    full_name="Employee User",
+                    dob=dt.date(1992, 2, 2),
+                    password="pass",
+                    phone_number="456",
+                    email="employee2@example.com",
+                    created_at=dt.date.today(),
+                    img_location="",
+                    account_status="True",
+                ),
+            ])
+            db.add_all([
+                Manager(
+                    manager_id=1,
+                    user_id=1,
+                    department_id=1,
+                    is_active=True,
+                    created_at=dt.datetime.now(),
+                    last_active_at=dt.datetime.now(),
+                ),
+                Employee(emp_id=2, user_id=2, department_id=1),
+            ])
+            db.add(Shift(
+                shift_id=100,
+                emp_id=2,
+                start_time=dt.datetime.now(),
+                end_time=dt.datetime.now() + dt.timedelta(hours=8),
+                created_by_manager_id=1,
+                status=ShiftStatusEnum.scheduled,
+            ))
+            await db.commit()
+            
+            result = await db.execute(select(Shift).order_by(Shift.shift_id.desc()))
+            shift = result.scalars().first()
+            return shift
+
+    shift = asyncio.run(_seed())
 
     assert shift is not None
 
@@ -211,8 +233,9 @@ def test_api_employee_book_shift(setup_test_database, client):
 # -------------------------------------------------------------------
 
 @pytest.mark.integration
-def test_upload_image(tmp_path, client):
-    file_path = tmp_path / "test.jpg"
+def test_upload_image(tmp_path: object, client: TestClient):
+    from pathlib import Path
+    file_path = Path(str(tmp_path)) / "test.jpg"
     file_path.write_bytes(b"test image")
 
     with open(file_path, "rb") as f:
@@ -225,3 +248,7 @@ def test_upload_image(tmp_path, client):
     data = response.json()
     assert "image_url" in data
     assert "image_id" in data
+
+
+
+ 

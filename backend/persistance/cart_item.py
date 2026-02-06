@@ -8,27 +8,25 @@
 # optionally a product variant.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Integer, ForeignKey
+
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+from sqlalchemy import BigInteger, Integer, ForeignKey, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 
-class CartItem(Base):
-    """
-    ORM model for the 'cart_item' table.
-    Represents an item in a user's shopping cart.
+if TYPE_CHECKING:
+    from .cart import Cart
 
-    Attributes:
-        cart_item_id (BigInteger): Primary key for the cart item.
-        cart_id (BigInteger): Foreign key referencing the cart.
-        product_id (BigInteger): Foreign key referencing the product.
-        variant_id (BigInteger): Foreign key referencing the product variant (optional).
-        quantity (Integer): Number of units of the product in the cart.
-        # Relationships to cart, product, and product_variant are defined elsewhere.
-    """
+
+class CartItem(Base):
     __tablename__ = 'cart_item'
-    # Use Integer for SQLite autoincrement primary key behavior
-    cart_item_id = Column(Integer, primary_key=True, autoincrement=True)
-    cart_id = Column(BigInteger, ForeignKey('cart.cart_id'))
-    product_id = Column(BigInteger, ForeignKey('product.product_id'))
-    variant_id = Column(BigInteger, ForeignKey('product_variant.variant_id'), nullable=True)
-    quantity = Column(Integer)
-    # Relationships (to be completed in cart.py, product.py, product_variant.py)
+    cart_item_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    cart_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('cart.cart_id'))
+    product_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('product.product_id'))
+    variant_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('product_variant.variant_id'), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    cart: Mapped['Cart'] = relationship('Cart', back_populates='items')

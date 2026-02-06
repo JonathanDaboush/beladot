@@ -1,7 +1,30 @@
 import os
 import sys
-import asyncio
+from typing import Any, Optional
 import pytest
+@pytest.fixture(scope="function")
+def setup_test_database():
+    os.environ["ENV"] = "test"
+    from backend.config import settings
+    os.environ["DATABASE_URL"] = settings.DATABASE_URL
+    from backend.db.base import Base
+    from backend.persistance.base import get_engine
+    engine = get_engine()
+    # Drop all tables
+    Base.metadata.drop_all(engine)
+    # Do not call Base.metadata.create_all here - Alembic will create schema
+    # after dropping tables. Calling create_all then running migrations causes
+    # duplicate table creation errors during tests.
+    # Run Alembic migrations
+    from alembic.config import Config
+    from alembic import command
+    alembic_cfg = Config(
+        os.path.join(os.path.dirname(__file__), "../../alembic.ini")
+    )
+    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../migrations"))
+    alembic_cfg.set_main_option("script_location", migrations_dir)
+    command.upgrade(alembic_cfg, "head")
+    yield
 from fastapi.testclient import TestClient
 
 # Ensure backend is importable when running from project root
@@ -12,7 +35,7 @@ sys.path.insert(
 
 
 class FakeFinanceService:
-    async def get_issues_catalog(self, employee_id: int):
+    async def get_issues_catalog(self, employee_id: int) -> list[dict[str, Any]]:
         return [
             {
                 "incident_id": 1,
@@ -24,7 +47,7 @@ class FakeFinanceService:
             }
         ]
 
-    async def create_issue(self, employee_id: int, description: str, cost: float, date: str, status: str):
+    async def create_issue(self, employee_id: int, description: str, cost: float, date: str, status: str) -> dict[str, Any]:
         return {
             "incident_id": 123,
             "employee_id": employee_id,
@@ -34,7 +57,14 @@ class FakeFinanceService:
             "status": status,
         }
 
-    async def update_issue(self, issue_id: int, description=None, cost=None, date=None, status=None):
+    async def update_issue(
+        self,
+        issue_id: int,
+        description: Optional[str] = None,
+        cost: Optional[float] = None,
+        date: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> dict[str, Any]:
         return {
             "incident_id": issue_id,
             "employee_id": 1,
@@ -44,7 +74,7 @@ class FakeFinanceService:
             "status": status or "open",
         }
 
-    async def delete_issue(self, issue_id: int):
+    async def delete_issue(self, issue_id: int) -> dict[str, Any]:
         return {"incident_id": issue_id, "deleted": True}
 
 
@@ -59,9 +89,9 @@ def client():
     return TestClient(app)
 
 
-def test_create_issue_handles_conflict(client):
+def test_create_issue_handles_conflict(client: TestClient) -> None:
 
-    payload = {
+    payload: dict[str, Any] = {
         "employee_id": 1,
         "description": "Broken equipment",
         "cost": 99.5,
@@ -77,7 +107,7 @@ def test_create_issue_handles_conflict(client):
         client.post("/api/finance/issues", json=payload, headers=headers)
 
 
-def test_update_issue_success(client):
+def test_update_issue_success(client: TestClient) -> None:
     headers = {
         "X-Auth-Role": "employee",
         "X-Auth-Id": "1",
@@ -90,7 +120,7 @@ def test_update_issue_success(client):
     assert body["status"] == "closed"
 
 
-def test_delete_issue_returns_deleted_flag(client):
+def test_delete_issue_returns_deleted_flag(client: TestClient) -> None:
     headers = {
         "X-Auth-Role": "employee",
         "X-Auth-Id": "1",
@@ -102,7 +132,7 @@ def test_delete_issue_returns_deleted_flag(client):
     assert body["deleted"] is True
 
 
-def test_get_issues_catalog(client):
+def test_get_issues_catalog(client: TestClient) -> None:
     headers = {
         "X-Auth-Role": "employee",
         "X-Auth-Id": "1",

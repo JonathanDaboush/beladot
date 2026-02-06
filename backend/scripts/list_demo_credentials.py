@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from backend.persistance.base import get_sessionmaker
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.persistance.user import User
 
 
@@ -19,14 +19,15 @@ def infer_role(email: str) -> str:
     return 'user'
 
 
-def main() -> None:
-    Session = get_sessionmaker()
-    with Session() as s:
-        rows = s.execute(select(User.full_name, User.email, User.password).order_by(User.email)).all()
+import asyncio
+async def main() -> None:
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(select(User.full_name, User.email, User.password).order_by(User.email))
+        rows = result.all()
     for name, email, pwd in rows:
         role = infer_role(email)
         print(f"{role}\t{name}\t{email}\t{pwd}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

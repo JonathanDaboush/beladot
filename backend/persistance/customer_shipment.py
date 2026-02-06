@@ -7,8 +7,9 @@
 # associated with a customer. Stores address and shipment details for the user.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String, ForeignKey
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import BigInteger, String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 class CustomerShipment(Base):
@@ -29,13 +30,13 @@ class CustomerShipment(Base):
         # Relationship to user is defined elsewhere.
     """
     __tablename__ = 'customer_shipment'
-    cs_id = Column(BigInteger, primary_key=True)
-    customer_id = Column(BigInteger, ForeignKey('users.user_id'))
-    address = Column(String(255))
-    postal_code = Column(String(20))
-    street_line_1 = Column(String(255))
-    street_line_2 = Column(String(255))
-    city = Column(String(100))
-    state_province = Column(String(100))
-    country = Column(String(100))
+    cs_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    address: Mapped[str] = mapped_column(String(255))
+    postal_code: Mapped[str] = mapped_column(String(20))
+    street_line_1: Mapped[str] = mapped_column(String(255))
+    street_line_2: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    city: Mapped[str] = mapped_column(String(100))
+    state_province: Mapped[str] = mapped_column(String(100))
+    country: Mapped[str] = mapped_column(String(100))
     # Relationship (to be completed in user.py)

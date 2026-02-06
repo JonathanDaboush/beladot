@@ -6,57 +6,65 @@
 # Provides CRUD methods for incidents, including soft delete.
 # ------------------------------------------------------------------------------
 
+from typing import Optional, List
 from backend.persistance.incident import Incident
-from sqlalchemy import select, update as sql_update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-class IncidentRepository:
-    """
-    Repository for Incident model.
-    Provides CRUD operations for incidents, including soft delete.
-    """
-    def __init__(self, db: AsyncSession):
-        """Initialize repository with async DB session."""
-        self.db = db
+from backend.repositories.base_repository import BaseRepository
 
-    async def get_by_id(self, incident_id, include_deleted=False):
-        """Async retrieve an incident by its ID, optionally including deleted incidents."""
-        stmt = select(Incident).where(Incident.incident_id == incident_id)
-        if not include_deleted:
-            stmt = stmt.where(Incident.deleted == False)
-        result = await self.db.execute(stmt)
+
+class IncidentRepository(BaseRepository[Incident, int]):
+    """Repository for Incident model implementing BaseRepository contract."""
+    def __init__(self, session: AsyncSession):
+        super().__init__(session)
+
+    UPDATABLE_FIELDS = {"description", "cost", "date", "status", "status_addressed", "paid_all"}
+
+    async def get(self, id: int) -> Optional[Incident]:
+        result = await self.session.execute(select(Incident).where(Incident.incident_id == id, Incident.is_deleted == False))
         return result.scalar_one_or_none()
 
-    async def save(self, incident):
-        """Async save a new incident to the database."""
-        self.db.add(incident)
-        await self.db.flush()
-        await self.db.commit()
-        await self.db.refresh(incident)
-        return incident
+    async def list(self, *, limit: int = 100, offset: int = 0) -> List[Incident]:
+        BaseRepository.validate_pagination(limit, offset)
+        result = await self.session.execute(select(Incident).where(Incident.is_deleted == False).limit(limit).offset(offset))
+        items: List[Incident] = list(result.scalars().all())
+        return items
 
-    async def update(self, incident_id, **kwargs):
-        """Async update an existing incident by ID with provided fields."""
-        incident = await self.get_by_id(incident_id)
-        if not incident:
-            return None
-        for k, v in kwargs.items():
-            if hasattr(incident, k):
-                setattr(incident, k, v)
-        await self.db.commit()
-        return incident
+    async def add(self, obj: Incident) -> Incident:
+        self.session.add(obj)
+        await self.session.flush()
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
 
-    async def delete(self, incident_id):
-        """Async soft delete an incident by its ID (marks as deleted)."""
-        incident = await self.get_by_id(incident_id, include_deleted=True)
-        if not incident:
-            return False
-        incident.deleted = True
-        await self.db.commit()
-        return True
+    async def update(self, id: int, obj: Incident) -> Incident:
+        existing = await self.get(id)
+        if not existing:
+            raise ValueError(f"Incident with id {id} not found")
+        self.apply_whitelist_update(existing, obj, self.UPDATABLE_FIELDS)
+        await self.session.commit()
+        await self.session.refresh(existing)
+        return existing
 
-    async def get_all(self):
-        """Async retrieve all non-deleted incidents."""
-        stmt = select(Incident).where(Incident.deleted == False)
-        result = await self.db.execute(stmt)
-        return result.scalars().all()
+    async def delete(self, id: int) -> None:
+        existing = await self.get(id)
+        if existing:
+            existing.is_deleted = True
+            await self.session.commit()
+        return None
+
+    async def get_all(self) -> List[Incident]:
+        stmt = select(Incident).where(Incident.is_deleted == False)
+        result = await self.session.execute(stmt)
+        items: List[Incident] = list(result.scalars().all())
+        return items
+
+    # Service layer compatibility aliases
+    async def get_by_id(self, id: int) -> Optional[Incident]:
+        """Alias for get() to match service layer expectations."""
+        return await self.get(id)
+
+    async def save(self, obj: Incident) -> Incident:
+        """Alias for add() to match service layer expectations."""
+        return await self.add(obj)

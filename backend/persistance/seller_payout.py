@@ -7,7 +7,13 @@
 # a seller. Tracks seller, amount, currency, status, and timestamps.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Numeric, String, Date, DateTime, Enum, ForeignKey
+
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Numeric, String, Date, DateTime, Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
 from .enums import PayoutStatusEnum
@@ -28,11 +34,11 @@ class SellerPayout(Base):
         # Relationships to user are defined elsewhere.
     """
     __tablename__ = 'seller_payout'
-    payout_id = Column(BigInteger, primary_key=True)
-    seller_id = Column(BigInteger, ForeignKey('users.user_id'))
-    amount = Column(Numeric(10,2))
-    currency = Column(String(10))
-    date_of_payment = Column(Date)
-    status = Column(Enum(PayoutStatusEnum))
-    created_at = Column(DateTime)
+    payout_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    seller_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    amount: Mapped[float] = mapped_column(Numeric(10,2))
+    currency: Mapped[str] = mapped_column(String(10))
+    date_of_payment: Mapped[Optional[datetime.date]] = mapped_column(Date, nullable=True)
+    status: Mapped[PayoutStatusEnum] = mapped_column(Enum(PayoutStatusEnum))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in user.py)

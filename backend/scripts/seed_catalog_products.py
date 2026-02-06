@@ -15,7 +15,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from backend.persistance.base import get_sessionmaker
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.persistance.user import User
 from backend.persistance.category import Category
 from backend.persistance.subcategory import Subcategory
@@ -36,29 +36,30 @@ PRODUCT_TITLES = [
 ]
 
 
-def pick_sellers(session) -> list[User]:
-    sellers = (
-        session.execute(select(User).where(User.email.like("seller%"))).scalars().all()
-    )
-    # Fallback: if none found, just use all users
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def pick_sellers(session: AsyncSession) -> list[User]:
+    result = await session.execute(select(User).where(User.email.like("seller%")))
+    sellers = result.scalars().all()
     if not sellers:
-        sellers = session.execute(select(User)).scalars().all()
-    return sellers
+        result = await session.execute(select(User))
+        sellers = result.scalars().all()
+    return list(sellers)
 
 
-def existing_titles_in_sub(session, subcat_id: int) -> set[str]:
-    rows = session.execute(
+async def existing_titles_in_sub(session: AsyncSession, subcat_id: int) -> set[str]:
+    result = await session.execute(
         select(Product.title).where(Product.subcategory_id == subcat_id)
-    ).all()
+    )
+    rows = result.all()
     return {t for (t,) in rows}
 
 
-def seed_products_for_subcategory(session, sub: Subcategory, sellers: list[User], max_per_sub: int = 5) -> int:
+async def seed_products_for_subcategory(session: AsyncSession, sub: Subcategory, sellers: list[User], max_per_sub: int = 5) -> int:
     if not sellers:
         return 0
-    existing = existing_titles_in_sub(session, sub.subcategory_id)
+    existing = await existing_titles_in_sub(session, sub.subcategory_id)
     count = 0
-    # Shuffle titles to vary selection per run
     titles = PRODUCT_TITLES[:]
     random.shuffle(titles)
     for i in range(min(max_per_sub, len(titles))):
@@ -82,26 +83,26 @@ def seed_products_for_subcategory(session, sub: Subcategory, sellers: list[User]
         )
         session.add(p)
         try:
-            session.flush()
+            await session.flush()
             count += 1
         except IntegrityError:
-            session.rollback()
-            # Skip duplicates or constraint issues
+            await session.rollback()
             continue
     return count
 
 
-def main():
-    Session = get_sessionmaker()
+import asyncio
+async def main() -> None:
     total = 0
-    with Session() as session:
-        sellers = pick_sellers(session)
-        subcats = session.execute(select(Subcategory).order_by(Subcategory.subcategory_id)).scalars().all()
+    async with AsyncSessionLocal() as session:
+        sellers = await pick_sellers(session)
+        result = await session.execute(select(Subcategory).order_by(Subcategory.subcategory_id))
+        subcats = result.scalars().all()
         for sub in subcats:
-            total += seed_products_for_subcategory(session, sub, sellers, max_per_sub=3)
-        session.commit()
+            total += await seed_products_for_subcategory(session, sub, sellers, max_per_sub=3)
+        await session.commit()
     print(f"Seeded demo products: {total}")
 
-
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())

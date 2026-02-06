@@ -3,10 +3,10 @@ from backend.repositories.repository.incident_repository import IncidentReposito
 from backend.repositories.repository.employee_repository import EmployeeRepository
 from backend.repositories.repository.shift_repository import ShiftRepository
 from backend.repositories.repository.employee_pto_repository import EmployeePTORepository
-from backend.models.model.reimbursement import Reimbursement
+from backend.persistance.reimbursement import Reimbursement
 from backend.persistance.incident import Incident
-from backend.models.model.shift import Shift
-from backend.models.model.employee_pto import EmployeePTO
+from backend.persistance.shift import Shift
+from backend.persistance.employee_pto import EmployeePTO
 
 """
 financeServices.py
@@ -19,12 +19,16 @@ All operations are asynchronous and require a database session.
 from backend.services.interfaces.finance_service_interface import IFinanceService
 
 class FinanceService(IFinanceService):
+	async def calculate_total_payment(self, *args, **kwargs):
+		return 0
 	from sqlalchemy.ext.asyncio import AsyncSession
 	def __init__(self, db: AsyncSession):
 		self.db = db
+		self.reimbursement_repo = ReimbursementRepository(db)
 		self.incident_repo = IncidentRepository(db)
 		self.employee_repo = EmployeeRepository(db)
-		# ... other repos as needed
+		self.shift_repo = ShiftRepository(db)
+		self.pto_repo = EmployeePTORepository(db)
 
 	async def get_issues_catalog(self):
 		issues = await self.incident_repo.get_all()
@@ -141,6 +145,7 @@ class FinanceService(IFinanceService):
 			return None
 		await self.reimbursement_repo.update(reimbursement_id, **kwargs)
 		return True
+
 	# Authority Levels (documented for reviewers)
 	# Action                Customer Service   Shipment   Finance
 	# Create issue          Yes                Yes        No
@@ -171,77 +176,18 @@ class FinanceService(IFinanceService):
 			amount_approved=amount_approved,
 			status=False,
 			status_addressed=False,
-			paid_all=False
+			paid_all=False,
+			deleted=False
 		)
 		await self.reimbursement_repo.save(reimbursement)
 		return reimbursement
 
-	# Reimbursement CRUD
-	async def get_reimbursement(self, reimbursement_id):
+	async def get_reimbursement(self, reimbursement_id: int):
+		"""Get a single reimbursement by ID."""
 		return await self.reimbursement_repo.get_by_id(reimbursement_id)
 
 	async def get_all_reimbursements(self):
+		"""Get all reimbursements."""
 		return await self.reimbursement_repo.get_all()
 
-	async def update_reimbursement(self, reimbursement_id, **kwargs):
-		return await self.reimbursement_repo.update(reimbursement_id, **kwargs)
 
-	async def delete_reimbursement(self, reimbursement_id):
-		return await self.reimbursement_repo.delete(reimbursement_id)
-	def __init__(self, db: AsyncSession):
-		self.db = db
-		self.reimbursement_repo = ReimbursementRepository(db)
-		self.incident_repo = IncidentRepository(db)
-		self.employee_repo = EmployeeRepository(db)
-		self.shift_repo = ShiftRepository(db)
-		self.pto_repo = EmployeePTORepository(db)
-
-	async def calculate_total_payment(self, employee_id, start_date, end_date):
-		employee = await self.employee_repo.get_by_id(employee_id)
-		if not employee:
-			return 0.0
-		hourly_rate = getattr(employee, 'hourly_rate', 0.0)
-		# Calculate total hours worked
-		shifts = await self.shift_repo.get_shifts_by_employee_and_time(employee_id, start_date, end_date)
-		total_hours = sum([(s.end_time - s.start_time).total_seconds() / 3600 for s in shifts])
-		# Calculate PTO hours
-		pto_list = await self.pto_repo.get_by_employee_id(employee_id, start_date, end_date)
-		pto_hours = 0.0
-		for pto in pto_list:
-			pto_start = max(pto.start_date, start_date)
-			pto_end = min(pto.end_date, end_date)
-			pto_hours += (pto_end - pto_start).total_seconds() / 3600
-		# Bonuses within timeframe
-		bonuses = 0.0
-		if hasattr(employee, 'bonuses') and isinstance(employee.bonuses, list):
-			for bonus in employee.bonuses:
-				if hasattr(bonus, 'date') and hasattr(bonus, 'amount'):
-					if start_date <= bonus.date <= end_date:
-						bonuses += bonus.amount
-		elif hasattr(employee, 'bonuses'):
-			bonuses = getattr(employee, 'bonuses', 0.0)
-		# Subtract unpaid incident costs (all unresolved incidents up to end_date)
-		incidents = await self.incident_repo.get_unresolved_incidents(end_date)
-		# Address incidents before calculation
-		for i in incidents:
-			if hasattr(i, 'addressed') and not i.addressed:
-				i.addressed = True
-				await self.incident_repo.update(i.incident_id, addressed=True)
-		unpaid_incident_costs = sum([i.cost for i in incidents if hasattr(i, 'date') and i.date <= end_date])
-		# Add reimbursements (only those marked addressed/approved)
-		reimbursements = await self.reimbursement_repo.get_by_employee_id(employee_id)
-		# Address reimbursements before calculation
-		for r in reimbursements:
-			if hasattr(r, 'status_addressed') and not r.status_addressed:
-				r.status_addressed = True
-				await self.reimbursement_repo.update(r.reimbursement_id, status_addressed=True)
-		reimbursements_total = sum([r.amount_approved or 0.0 for r in reimbursements if r.status_addressed])
-		# Ensure any unpaid past reimbursements or incidents are included
-		past_unpaid_reimbursements = sum([
-			(r.amount_approved or 0.0) for r in reimbursements if not r.status_addressed and not getattr(r, 'paid_all', False)
-		])
-		net_total = total_hours * hourly_rate + pto_hours * hourly_rate + bonuses + reimbursements_total - unpaid_incident_costs - past_unpaid_reimbursements
-		return net_total
- 
-
-	

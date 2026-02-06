@@ -6,9 +6,12 @@
 # Provides async CRUD methods for customer shipments.
 # ------------------------------------------------------------------------------
 
+from typing import Any, Optional
+
 from backend.persistance.customer_shipment import CustomerShipment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 
 class CustomerShipmentRepository:
     """
@@ -19,14 +22,14 @@ class CustomerShipmentRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, cs_id):
+    async def get_by_id(self, cs_id: int) -> Optional[CustomerShipment]:
         """Retrieve a customer shipment by its ID."""
         result = await self.db.execute(
             select(CustomerShipment).filter(CustomerShipment.cs_id == cs_id)
         )
         return result.scalars().first()
 
-    async def create(self, **kwargs):
+    async def create(self, **kwargs: Any) -> CustomerShipment:
         """Create a new customer shipment."""
         shipment = CustomerShipment(**kwargs)
         self.db.add(shipment)
@@ -34,7 +37,7 @@ class CustomerShipmentRepository:
         await self.db.refresh(shipment)
         return shipment
 
-    async def update(self, cs_id, **kwargs):
+    async def update(self, cs_id: int, **kwargs: Any) -> Optional[CustomerShipment]:
         """Update an existing customer shipment by ID with provided fields."""
         shipment = await self.get_by_id(cs_id)
         if not shipment:
@@ -45,10 +48,11 @@ class CustomerShipmentRepository:
         await self.db.commit()
         return shipment
 
-    async def delete(self, cs_id):
+    async def delete(self, cs_id: int) -> bool:
         """Delete a customer shipment by its ID."""
         shipment = await self.get_by_id(cs_id)
         if shipment:
+            # `delete()` on AsyncSession is a synchronous method (not awaitable)
             await self.db.delete(shipment)
             await self.db.commit()
             return True

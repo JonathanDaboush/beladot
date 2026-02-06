@@ -8,6 +8,7 @@ Repository class for managing RefundSnapshot entities in the database.
 Provides async method for retrieving refund snapshots by order number.
 """
 
+from typing import Optional
 from backend.persistance.refund_snapshot import RefundSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -21,7 +22,7 @@ class RefundSnapshotRepository:
         """
         self.db = db
 
-    async def get_by_id(self, order_number):
+    async def get_by_id(self, order_number: int) -> Optional[RefundSnapshot]:
         """
         Retrieve a RefundSnapshot by order number.
         Args:

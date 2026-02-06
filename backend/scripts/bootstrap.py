@@ -2,7 +2,7 @@ import argparse
 from typing import Optional
 
 ## Removed ensure_sqlite_schema import; not needed for Postgres
-from backend.persistance.base import get_sessionmaker
+from backend.persistance.async_base import AsyncSessionLocal
 from sqlalchemy import select, func
 
 
@@ -10,55 +10,56 @@ def ensure_schema() -> None:
     pass  # No-op for Postgres
 
 
-def seed_categories() -> bool:
+async def seed_categories() -> bool:
     from backend.persistance.category import Category
     from backend.persistance.subcategory import Subcategory
     from backend.scripts import seed_categories as _seed
-    Session = get_sessionmaker()
-    with Session() as s:
-        cat_count = s.execute(select(func.count(Category.category_id))).scalar() or 0
-        sub_count = s.execute(select(func.count(Subcategory.subcategory_id))).scalar() or 0
+    async with AsyncSessionLocal() as s:
+        cat_count = (await s.scalar(select(func.count(Category.category_id)))) or 0
+        sub_count = (await s.scalar(select(func.count(Subcategory.subcategory_id)))) or 0
     if cat_count == 0 or sub_count == 0:
-        _seed.main()
+        await _seed.main()
         return True
     return False
 
 
-def seed_users() -> bool:
+async def seed_users() -> bool:
     """
     Always run demo seeding. The seeder is idempotent by deterministic emails
     and will create any missing demo accounts up to configured counts.
     """
     from backend.scripts import seed_demo_data as _seed
-    _seed.main()
+    await _seed.main()
     return True
 
 
-def generate_images() -> int:
+async def generate_images() -> int:
     from backend.scripts import generate_missing_category_images as _gen
     # Idempotent; will skip existing
-    _gen.main()
+    await _gen.main()
     # We cannot easily get count here without parsing stdout; return -1 as n/a
     return -1
 
 
-def assign_images() -> None:
+async def assign_images() -> None:
     from backend.scripts import assign_images as _assign
-    _assign.main()
+    await _assign.main()
 
 
-def clear_products() -> None:
+async def clear_products() -> None:
     from backend.scripts import clear_products as _clear
-    _clear.main()
+    await _clear.main()
 
 
-def run(all: bool = False,
-        ensure: bool = False,
-        seed_cats: bool = False,
-        gen_imgs: bool = False,
-        assign_imgs: bool = False,
-        seed_demo_users: bool = False,
-        reset_catalog: bool = False) -> None:
+async def run(
+    all: bool = False,
+    ensure: bool = False,
+    seed_cats: bool = False,
+    gen_imgs: bool = False,
+    assign_imgs: bool = False,
+    seed_demo_users: bool = False,
+    reset_catalog: bool = False,
+) -> None:
     if all:
         ensure = True
         seed_cats = True
@@ -72,22 +73,24 @@ def run(all: bool = False,
 
     changed = False
     if seed_cats:
-        changed = seed_categories() or changed
+        changed = await seed_categories() or changed
 
     if gen_imgs:
-        generate_images()
+        await generate_images()
 
     if assign_imgs:
-        assign_images()
+        await assign_images()
 
     if seed_demo_users:
-        seed_users()
+        await seed_users()
 
     if reset_catalog:
-        clear_products()
+        await clear_products()
 
     print("Bootstrap complete.")
 
+
+import asyncio
 
 def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Unified bootstrap utility")
@@ -100,7 +103,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     parser.add_argument("--reset-catalog", action="store_true", help="Delete all products and related records")
     args = parser.parse_args(argv)
 
-    run(
+    asyncio.run(run(
         all=args.all,
         ensure=args.ensure_schema,
         seed_cats=args.seed_categories,
@@ -108,8 +111,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         assign_imgs=args.assign_images,
         seed_demo_users=args.seed_users,
         reset_catalog=args.reset_catalog,
-    )
-
+    ))
 
 if __name__ == "__main__":
     main()

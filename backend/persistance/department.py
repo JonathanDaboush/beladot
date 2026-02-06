@@ -8,9 +8,15 @@
 # managers, shifts, and employees are defined elsewhere.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+from sqlalchemy import BigInteger, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
+
+if TYPE_CHECKING:
+    from .manager import Manager
 
 class Department(Base):
     """
@@ -23,6 +29,6 @@ class Department(Base):
         # Relationships to managers, shifts, and employees are defined elsewhere.
     """
     __tablename__ = 'department'
-    department_id = Column(BigInteger, primary_key=True)
-    name = Column(String(100))
+    department_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
     # Relationships (to be completed in manager.py, shift.py, employee.py)

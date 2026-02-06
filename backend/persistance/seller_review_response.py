@@ -7,9 +7,15 @@
 # response to a product review. Tracks review, seller, response text, and timestamp.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Text, DateTime, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Text, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
+
 
 class SellerReviewResponse(Base):
     """
@@ -25,9 +31,9 @@ class SellerReviewResponse(Base):
         # Relationships to product_review are defined elsewhere.
     """
     __tablename__ = 'seller_review_response'
-    response_id = Column(BigInteger, primary_key=True)
-    review_id = Column(BigInteger, ForeignKey('product_review.review_id'))
-    seller_id = Column(BigInteger, ForeignKey('users.user_id'))
-    response_text = Column(Text)
-    created_at = Column(DateTime)
+    response_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    review_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('product_review.review_id'))
+    seller_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    response_text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in product_review.py)

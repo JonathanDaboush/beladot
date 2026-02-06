@@ -11,6 +11,7 @@ Repository class for managing ShipmentEvent entities in the database.
 Provides async CRUD operations for shipment events.
 """
 
+from typing import Optional
 from backend.persistance.shipment_event import ShipmentEvent
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,7 +25,7 @@ class ShipmentEventRepository:
         """
         self.db = db
 
-    async def get_by_id(self, event_id):
+    async def get_by_id(self, event_id: int) -> Optional[ShipmentEvent]:
         """
         Retrieve a shipment event by its ID.
         Args:
@@ -37,7 +38,7 @@ class ShipmentEventRepository:
         )
         return result.scalars().first()
 
-    async def save(self, shipment_event):
+    async def save(self, shipment_event: ShipmentEvent) -> ShipmentEvent:
         """
         Save a new shipment event to the database.
         Args:
@@ -50,7 +51,7 @@ class ShipmentEventRepository:
         await self.db.refresh(shipment_event)
         return shipment_event
 
-    async def update(self, event_id, **kwargs):
+    async def update(self, event_id: int, **kwargs) -> Optional[ShipmentEvent]:
         """
         Update a shipment event by ID.
         Args:
@@ -68,7 +69,7 @@ class ShipmentEventRepository:
         await self.db.commit()
         return shipment_event
 
-    async def delete(self, event_id):
+    async def delete(self, event_id: int) -> bool:
         """
         Delete a shipment event by ID.
         Args:

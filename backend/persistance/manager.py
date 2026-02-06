@@ -8,9 +8,15 @@
 # tracks activity status and timestamps.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Boolean, DateTime, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
+
 
 class Manager(Base):
     """
@@ -27,10 +33,10 @@ class Manager(Base):
         # Relationships to department, PTO, sick days, shifts, and shift requests are defined elsewhere.
     """
     __tablename__ = 'manager'
-    manager_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    department_id = Column(BigInteger, ForeignKey('department.department_id'))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
-    last_active_at = Column(DateTime)
+    manager_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    department_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('department.department_id'))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    last_active_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in department.py, employee_pto.py, employee_sickday.py, shift.py, shift_request.py)

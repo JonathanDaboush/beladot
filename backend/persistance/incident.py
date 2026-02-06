@@ -7,7 +7,11 @@
 # an employee. Tracks description, cost, date, and status flags.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, Integer, BigInteger, String, Float, Boolean, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+from sqlalchemy import Integer, BigInteger, String, Float, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 class Incident(Base):
@@ -26,12 +30,13 @@ class Incident(Base):
         deleted (Boolean): Whether the incident record is deleted (soft delete).
     """
     __tablename__ = 'incident'
-    incident_id = Column(Integer, primary_key=True, autoincrement=True)
-    employee_id = Column(BigInteger, ForeignKey('employee.emp_id'))
-    description = Column(String(255))
-    cost = Column(Float)
-    date = Column(String(32))  # ISO date string for simplicity
-    status = Column(String(32), default='open')
-    status_addressed = Column(Boolean, default=False)
-    paid_all = Column(Boolean, default=False)
-    deleted = Column(Boolean, default=False)
+    incident_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    employee_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('employee.emp_id'))
+    description: Mapped[str] = mapped_column(String(255))
+    cost: Mapped[float] = mapped_column(Float)
+    date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # ISO date string for simplicity
+    status: Mapped[str] = mapped_column(String(32), default='open')
+    status_addressed: Mapped[bool] = mapped_column(Boolean, default=False)
+    paid_all: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

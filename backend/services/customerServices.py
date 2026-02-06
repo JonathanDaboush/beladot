@@ -9,6 +9,7 @@ All operations are asynchronous and require a database session.
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from backend.infrastructure.structured_logging import logger
 
 async def deactivate_user_account(db: AsyncSession) -> tuple[bool, Optional[str]]:
     """
@@ -56,8 +57,8 @@ async def deactivate_user_account(db: AsyncSession) -> tuple[bool, Optional[str]
         try:
             # await generate_email(user.email, 'We\x19re sorry to see you go', 'goodbye_account.html')
             pass
-        except Exception:
-            pass  # Email failure should not block deactivation
+        except Exception as e:
+            logger.exception("customerServices.goodbye_email_failed", user_id=getattr(user, 'user_id', None), email=user.email, error=str(e))
     return True, None
 from backend.repositories.repository.refund_request_repository import RefundRequestRepository
 from backend.persistance.refund_request import RefundRequest
@@ -428,7 +429,8 @@ def filterUserInfo(user_data):
                 response = requests.head(img_location, allow_redirects=True, timeout=5)
                 if response.status_code >= 400:
                     errors.append('Image URL does not exist or is not accessible.')
-            except Exception:
+            except Exception as e:
+                logger.debug("customerServices.image_url_check_failed", url=img_location, error=str(e))
                 errors.append('Image URL does not exist or is not accessible.')
         errors=[]
         twelve_years_ago = datetime.date.today().replace(year=datetime.date.today().year - 12)
@@ -468,7 +470,8 @@ async def add_item_to_cart(user_id: int, product_id: int, quantity: int, db: Asy
         try:
             from backend.config import settings
             is_test_env = getattr(settings, 'ENV', '').lower() == 'test'
-        except Exception:
+        except Exception as e:
+            logger.debug("customerServices.config_load_failed", error=str(e))
             is_test_env = False
         if is_test_env:
             from backend.persistance.product import Product
@@ -476,9 +479,9 @@ async def add_item_to_cart(user_id: int, product_id: int, quantity: int, db: Asy
                 product_id=product_id,
                 seller_id=user_id,
                 category_id=1,
-                subcategory_id=None,
+                subcategory_id=1,
                 title='Stub Product',
-                description=None,
+                description='Stub description',
                 price=0,
                 currency='USD',
                 is_active=True,
@@ -518,7 +521,8 @@ async def add_item_to_wishlist(user_id: int, product_id: int, quantity: int, db:
         try:
             from backend.config import settings
             is_test_env = getattr(settings, 'ENV', '').lower() == 'test'
-        except Exception:
+        except Exception as e:
+            logger.debug("customerServices.config_load_failed", error=str(e))
             is_test_env = False
         if is_test_env:
             from backend.persistance.product import Product
@@ -526,9 +530,9 @@ async def add_item_to_wishlist(user_id: int, product_id: int, quantity: int, db:
                 product_id=product_id,
                 seller_id=user_id,
                 category_id=1,
-                subcategory_id=None,
+                subcategory_id=1,
                 title='Stub Product',
-                description=None,
+                description='Stub description',
                 price=0,
                 currency='USD',
                 is_active=True,
@@ -542,7 +546,7 @@ async def add_item_to_wishlist(user_id: int, product_id: int, quantity: int, db:
             raise ValueError('Product not found')
     wishlist = await wishlist_repo.get_by_id(wishlist_id) if wishlist_id else None
     if not wishlist:
-        wishlist = Wishlist(wishlist_id=None, user_id=user_id, created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
+        wishlist = Wishlist(user_id=user_id, created_at=datetime.datetime.now(), updated_at=datetime.datetime.now())
         db.add(wishlist)
         await db.commit()
         await db.refresh(wishlist)

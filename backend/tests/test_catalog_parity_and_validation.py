@@ -1,7 +1,11 @@
-import sys
 import os
+import sys
 import pytest
 from fastapi.testclient import TestClient
+from typing import Any, Generator, Dict
+from sqlite3 import Connection
+
+ 
 
 # Ensure backend is importable when running from project root
 sys.path.insert(
@@ -11,146 +15,124 @@ sys.path.insert(
 
 
 @pytest.fixture(scope="session")
-def client():
+def client() -> TestClient:
     from backend.app import app
     return TestClient(app)
 
 
 @pytest.fixture(scope="function")
-def setup_test_database():
-    # Ensure we use test settings and Alembic to create full schema
-    os.environ["ENV"] = "test"
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/divina_dev"
-    # Start from a clean database file to avoid stale schemas
-    try:
-        if os.path.exists("test.db"):
-            os.remove("test.db")
-    except Exception:
-        pass
-    from alembic.config import Config
-    from alembic import command
-    alembic_cfg = Config(
-        os.path.join(os.path.dirname(__file__), "../../alembic.ini")
-    )
-    migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../migrations"))
-    alembic_cfg.set_main_option("script_location", migrations_dir)
-    command.upgrade(alembic_cfg, "head")
-    # Ensure any tables missing from migrations are created from ORM metadata
-    try:
-        from backend.db.base import Base
-        from backend.persistance.base import get_engine
-        Base.metadata.create_all(get_engine())
-    except Exception:
-        pass
-    # Debug: list tables present after migration
-    try:
-        import sqlite3
-        conn = sqlite3.connect("test.db")
-        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-        print("Tables:", sorted(tables))
-        conn.close()
-    except Exception:
-        pass
+def setup_test_database() -> Generator[None, None, None]:
+    # Tests already use the session-scoped conftest.py init_db fixture
+    # which creates all tables via Base.metadata.create_all()
+    # This fixture now just yields without doing anything since the DB is already set up
     yield
 
 
-def seed_product_and_variant():
-    from backend.persistance.base import SessionLocal
+from sqlalchemy import select
+from backend.persistance.category import Category
+
+async def seed_product_and_variant() -> int:
+    from backend.persistance.async_base import AsyncSessionLocal
     from backend.persistance.product import Product
     from backend.persistance.product_variant import ProductVariant
     from backend.persistance.user import User
-    from backend.persistance.category import Category
     import datetime as dt
 
-    db = SessionLocal()
-    # Ensure a clean state for the fixed variant_id used in tests
-    try:
-        existing = db.query(ProductVariant).filter(ProductVariant.variant_id == 1).first()
-        if existing:
-            db.delete(existing)
-            db.commit()
-    except Exception:
-        pass
-    # Ensure required FK parents exist
-    # Reuse existing seller user if present to avoid unique email collisions
-    u = db.query(User).filter(User.email == "seller@example.com").first()
-    if not u:
-        u = User(
-            full_name="Seller One",
-            dob=dt.date(1980, 1, 1),
-            password="x",
-            phone_number="0000000000",
-            email="seller@example.com",
-            created_at=dt.date.today(),
-            img_location="",
-            account_status="True",
+    async with AsyncSessionLocal() as db:
+        # Ensure a clean state for the fixed variant_id used in tests
+        try:
+            result = await db.execute(select(ProductVariant).where(ProductVariant.variant_id == 1))
+            existing = result.scalars().first()
+            if existing:
+                await db.delete(existing)
+                await db.commit()
+        except Exception:
+            pass
+        # Ensure required FK parents exist
+        # Reuse existing seller user if present to avoid unique email collisions
+        result = await db.execute(select(User).where(User.email == "seller@example.com"))
+        u = result.scalars().first()
+        if not u:
+            u = User(
+                full_name="Seller One",
+                dob=dt.date(1980, 1, 1),
+                password="x",
+                phone_number="0000000000",
+                email="seller@example.com",
+                created_at=dt.date.today(),
+                img_location="",
+                account_status="True",
+            )
+            db.add(u)
+            await db.commit()
+            await db.refresh(u)
+
+        # Check if category exists, otherwise create it
+        result = await db.execute(select(Category).where(Category.name == "General"))
+        c = result.scalars().first()
+        if not c:
+            c = Category(name="General", image_url=None)
+            db.add(c)
+            await db.commit()
+            await db.refresh(c)
+
+        p = Product(
+            title="Test Product",
+            description="Desc",
+            price=9.99,
+            currency="USD",
+            is_active=True,
+            created_at=dt.datetime.now(),
+            updated_at=dt.datetime.now(),
+            seller_id=u.user_id,
+            category_id=c.category_id,
+            subcategory_id=None,
         )
-        db.add(u)
-        db.commit()
-        db.refresh(u)
+        db.add(p)
+        await db.commit()
+        await db.refresh(p)
 
-    c = Category(category_id=1, name="General", image_url=None)
-    try:
-        db.add(c)
-        db.commit()
-    except Exception:
-        db.rollback()
-
-    p = Product(
-        title="Test Product",
-        description="Desc",
-        price=9.99,
-        currency="USD",
-        is_active=True,
-        created_at=dt.datetime.now(),
-        updated_at=dt.datetime.now(),
-        seller_id=u.user_id,
-        category_id=1,
-        subcategory_id=None,
-    )
-    db.add(p)
-    db.commit()
-    db.refresh(p)
-
-    v = ProductVariant(
-        variant_id=1,
-        product_id=p.product_id,
-        variant_name="Red",
-        price=12.34,
-        quantity=2,
-        is_active=True,
-    )
-    db.add(v)
-    # Also add an inactive product to test invalid case
-    p_inactive = Product(
-        title="Inactive",
-        description="",
-        price=5.00,
-        currency="USD",
-        is_active=False,
-        created_at=dt.datetime.now(),
-        updated_at=dt.datetime.now(),
-        seller_id=u.user_id,
-        category_id=1,
-        subcategory_id=None,
-    )
-    db.add(p_inactive)
-    db.commit()
-    pid = p.product_id
-    db.close()
+        v = ProductVariant(
+            variant_id=1,
+            product_id=p.product_id,
+            variant_name="Red",
+            price=12.34,
+            quantity=2,
+            is_active=True,
+        )
+        db.add(v)
+        # Also add an inactive product to test invalid case
+        p_inactive = Product(
+            title="Inactive",
+            description="Inactive product description",
+            price=5.00,
+            currency="USD",
+            is_active=False,
+            created_at=dt.datetime.now(),
+            updated_at=dt.datetime.now(),
+            seller_id=u.user_id,
+            category_id=1,
+            subcategory_id=None,
+        )
+        db.add(p_inactive)
+        await db.commit()
+        pid: int = p.product_id
     return pid
 
 
-def headers_user():
+def headers_user() -> Dict[str, str]:
     return {
         "X-Auth-Role": "user",
         "X-Auth-Id": "1",
     }
 
 
-def test_browse_parity_list(setup_test_database, client):
+def test_browse_parity_list(setup_test_database: None, client: TestClient) -> None:
     # Seed at least one product
-    seed_product_and_variant()
+    import asyncio
+    async def _seed():
+        await seed_product_and_variant()
+    asyncio.run(_seed())
     r_guest = client.get("/api/v1/catalog/products")
     r_user = client.get("/api/v1/catalog/products", headers=headers_user())
     assert r_guest.status_code == 200
@@ -158,8 +140,11 @@ def test_browse_parity_list(setup_test_database, client):
     assert r_guest.json() == r_user.json()
 
 
-def test_browse_parity_detail(setup_test_database, client):
-    pid = seed_product_and_variant()
+def test_browse_parity_detail(setup_test_database: None, client: TestClient) -> None:
+    import asyncio
+    async def _seed():
+        return await seed_product_and_variant()
+    pid: int = asyncio.run(_seed())
     r_guest = client.get(f"/api/v1/catalog/products/{pid}")
     r_user = client.get(f"/api/v1/catalog/products/{pid}", headers=headers_user())
     assert r_guest.status_code == 200
@@ -167,10 +152,13 @@ def test_browse_parity_detail(setup_test_database, client):
     assert r_guest.json() == r_user.json()
 
 
-def test_validate_cart_public_and_auth(setup_test_database, client):
-    pid = seed_product_and_variant()
+def test_validate_cart_public_and_auth(setup_test_database: None, client: TestClient) -> None:
+    import asyncio
+    async def _seed():
+        return await seed_product_and_variant()
+    pid: int = asyncio.run(_seed())
     # Guest validation
-    payload = {
+    payload: Dict[str, Any] = {
         "items": [
             {"product_id": pid, "quantity": 3},  # non-variant
             {"product_id": pid, "variant_id": 1, "quantity": 5},  # exceeds stock
@@ -199,7 +187,7 @@ def test_validate_cart_public_and_auth(setup_test_database, client):
     assert r_user.json() == r_guest.json()
 
 
-def test_checkout_requires_auth(setup_test_database, client):
+def test_checkout_requires_auth(setup_test_database: None, client: TestClient) -> None:
     # Attempt to add to customer cart without auth -> forbidden
     r_guest = client.post("/api/v1/customer/cart/items", json={"product_id": 1, "quantity": 1})
     assert r_guest.status_code in (401, 403)

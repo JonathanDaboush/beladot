@@ -7,6 +7,7 @@
 # Provides async CRUD methods for paystub snapshots.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.paystub_snapshot import PaystubSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -20,21 +21,21 @@ class PaystubSnapshotRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_employee_name(self, employee_name):
+    async def get_by_employee_name(self, employee_name: str) -> Optional[PaystubSnapshot]:
         """Retrieve a paystub snapshot by employee name."""
         result = await self.db.execute(
             select(PaystubSnapshot).filter(PaystubSnapshot.employee_name == employee_name)
         )
         return result.scalars().first()
 
-    async def save(self, snapshot):
+    async def save(self, snapshot: PaystubSnapshot) -> PaystubSnapshot:
         """Save a new paystub snapshot to the database."""
         self.db.add(snapshot)
         await self.db.commit()
         await self.db.refresh(snapshot)
         return snapshot
 
-    async def delete(self, employee_name):
+    async def delete(self, employee_name: str) -> bool:
         """Delete a paystub snapshot by employee name."""
         snapshot = await self.get_by_employee_name(employee_name)
         if snapshot:

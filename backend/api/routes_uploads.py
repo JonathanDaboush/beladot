@@ -3,8 +3,10 @@ import os, uuid
 from io import BytesIO
 from PIL import Image
 from backend.infrastructure.storage import storage
+from backend.infrastructure.structured_logging import logger
 
-def validate_upload_file(file: UploadFile):
+from typing import Optional
+def validate_upload_file(file: UploadFile) -> None:
     # File size cap (5MB)
     file.file.seek(0, 2)
     size = file.file.tell()
@@ -12,7 +14,7 @@ def validate_upload_file(file: UploadFile):
     if size > 5 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large")
     # MIME validation
-    if not file.content_type.startswith("image/"):
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=415, detail="Invalid file type")
     # Basic image verification using Pillow (future-proof vs imghdr)
     # Keep behavior lenient for test payloads: don't reject on verification failure,
@@ -21,10 +23,13 @@ def validate_upload_file(file: UploadFile):
     file.file.seek(0)
     try:
         Image.open(BytesIO(data)).verify()
-    except Exception:
-        pass
+    except Exception as e:
+        try:
+            logger.debug("uploads.image_verify_failed", error=str(e))
+        except Exception:
+            pass
     # Path traversal protection
-    if ".." in file.filename or file.filename.startswith("/"):
+    if not file.filename or ".." in file.filename or file.filename.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid filename")
 
 router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
@@ -36,37 +41,47 @@ def safe_filename(filename: str) -> str:
     ext = os.path.splitext(filename)[1]
     return f"img_{uuid.uuid4().hex}{ext}"
 
+
 @router.post("/images")
-async def upload_image(file: UploadFile, background_tasks: BackgroundTasks):
+async def upload_image(file: UploadFile, background_tasks: BackgroundTasks) -> dict[str, str]:
     validate_upload_file(file)
-    filename = safe_filename(file.filename)
+    filename = safe_filename(file.filename or "upload.png")
     temp_path = os.path.join(UPLOAD_ROOT, f"temp_{filename}")
     final_path = os.path.join(UPLOAD_ROOT, filename)
     try:
         storage.save(file.file, final_path)
-    except Exception:
+    except Exception as e:
+        try:
+            logger.exception("uploads.save_failed", temp_path=temp_path, final_path=final_path, error=str(e))
+        except Exception:
+            pass
         storage.delete(temp_path)
         raise HTTPException(status_code=500, detail="Failed to save file")
     url = storage.url_for(filename)
     return {"image_url": url, "image_id": filename}
 
+
 @router.post("/products/{product_id}/image")
-async def upload_product_image(product_id: int, file: UploadFile, background_tasks: BackgroundTasks):
+async def upload_product_image(product_id: int, file: UploadFile, background_tasks: BackgroundTasks) -> dict[str, str]:
     validate_upload_file(file)
     product_dir = os.path.join(UPLOAD_ROOT, f"product_{product_id}")
     storage.ensure_dir(product_dir)
-    filename = safe_filename(file.filename)
+    filename = safe_filename(file.filename or "upload.png")
     temp_path = os.path.join(product_dir, f"temp_{filename}")
     final_path = os.path.join(product_dir, filename)
     try:
         storage.save(file.file, final_path)
-    except Exception:
+    except Exception as e:
+        try:
+            logger.exception("uploads.product_save_failed", temp_path=temp_path, final_path=final_path, product_id=product_id, error=str(e))
+        except Exception:
+            pass
         storage.delete(temp_path)
         raise HTTPException(status_code=500, detail="Failed to save file")
     url = storage.url_for(filename, product_id=product_id)
     return {"image_url": url, "image_id": filename}
 
-def delete_uploaded_image(image_id: str, product_id: int = None):
+def delete_uploaded_image(image_id: str, product_id: Optional[int] = None) -> None:
     if product_id:
         path = os.path.join(UPLOAD_ROOT, f"product_{product_id}", image_id)
     else:

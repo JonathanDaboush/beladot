@@ -7,7 +7,11 @@
 # negative (owed) or positive (given).
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Numeric, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+from sqlalchemy import BigInteger, Numeric, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 class SellerExpense(Base):
@@ -20,6 +24,6 @@ class SellerExpense(Base):
         amount (Numeric): Expense amount; negative for owed, positive for given.
     """
     __tablename__ = 'sellers_expense'
-    id = Column(BigInteger, primary_key=True)
-    order_id = Column(BigInteger, ForeignKey('order.order_id'), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    order_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('order.order_id'), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)

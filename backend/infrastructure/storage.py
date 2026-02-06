@@ -1,12 +1,12 @@
 import os
 import shutil
-from typing import Optional
+from typing import Optional, BinaryIO
 
 UPLOAD_ROOT = os.path.join("backend", "images", "uploads")
 os.makedirs(UPLOAD_ROOT, exist_ok=True)
 
 class Storage:
-    def save(self, fileobj, destination: str):
+    def save(self, fileobj: BinaryIO, destination: str):
         temp_path = destination + ".tmp"
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(fileobj, f)

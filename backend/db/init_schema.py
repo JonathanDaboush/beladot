@@ -12,7 +12,7 @@ Use cases:
   when running locally on SQLite.
 """
 
-from typing import Optional
+from sqlalchemy.engine import Engine
 import importlib
 import pkgutil
 
@@ -35,13 +35,15 @@ def _import_all_persistance_models() -> None:
             continue
         try:
             importlib.import_module(f"{package_name}.{mod_name}")
-        except Exception:
-            # Be defensive: some helper modules may have side effects or
-            # external deps; failing imports shouldn't block schema init.
-            pass
+        except Exception as e:
+            try:
+                from backend.infrastructure.structured_logging import logger
+                logger.exception("init_schema.import_failed", module=mod_name, error=str(e))
+            except Exception:
+                pass
 
 
-def init_schema(engine=None, drop: bool = False) -> None:
+def init_schema(engine: Engine | None = None, drop: bool = False) -> None:
     """Initialize the schema on the provided engine.
 
     - Imports all model modules

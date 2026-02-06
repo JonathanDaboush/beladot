@@ -6,6 +6,7 @@
 # Provides async methods for retrieving product reviews by ID.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.product_review import ProductReview
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,7 +20,7 @@ class ProductReviewRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, review_id):
+    async def get_by_id(self, review_id: int) -> Optional[ProductReview]:
         """Retrieve a product review by its ID."""
         result = await self.db.execute(
             select(ProductReview).filter(ProductReview.review_id == review_id)

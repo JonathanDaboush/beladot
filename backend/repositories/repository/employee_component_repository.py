@@ -6,58 +6,68 @@
 # Provides async CRUD methods for employee components.
 # ------------------------------------------------------------------------------
 
+from typing import Optional, List, Any
 from backend.persistance.employee_component import EmployeeComponent
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-class EmployeeComponentRepository:
-    """
-    Repository for EmployeeComponent model.
-    Provides async CRUD operations for employee components.
-    """
-    def __init__(self, db: AsyncSession):
-        """Initialize repository with async DB session."""
-        self.db = db
+from backend.repositories.base_repository import BaseRepository
 
-    async def get_all(self):
-        """Retrieve all employee components."""
-        result = await self.db.execute(select(EmployeeComponent))
-        return result.scalars().all()
 
-    async def get_by_department(self, department_id):
-        """Retrieve all employee components for a given department ID."""
-        result = await self.db.execute(select(EmployeeComponent).filter(EmployeeComponent.department_id == department_id))
-        return result.scalars().all()
+class EmployeeComponentRepository(BaseRepository[EmployeeComponent, int]):
+    """Repository for EmployeeComponent model implementing BaseRepository contract."""
+    def __init__(self, session: AsyncSession):
+        super().__init__(session)
 
-    async def get_by_id(self, id):
-        """Retrieve an employee component by its ID."""
-        result = await self.db.execute(select(EmployeeComponent).filter(EmployeeComponent.id == id))
+    UPDATABLE_FIELDS = {"img_url", "description"}
+
+    async def get(self, id: int) -> Optional[EmployeeComponent]:
+        result = await self.session.execute(select(EmployeeComponent).filter(EmployeeComponent.id == id))
         return result.scalars().first()
 
-    async def create(self, img_url, description, department_id):
-        """Create a new employee component."""
+    async def list(self, *, limit: int = 100, offset: int = 0) -> List[EmployeeComponent]:
+        BaseRepository.validate_pagination(limit, offset)
+        result = await self.session.execute(select(EmployeeComponent).limit(limit).offset(offset))
+        return list(result.scalars().all())
+
+    async def add(self, obj: EmployeeComponent) -> EmployeeComponent:
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
+
+    async def update(self, id: int, obj: EmployeeComponent) -> EmployeeComponent:
+        existing = await self.get(id)
+        if not existing:
+            raise ValueError(f"EmployeeComponent with id {id} not found")
+        self.apply_whitelist_update(existing, obj, self.UPDATABLE_FIELDS)
+        await self.session.commit()
+        await self.session.refresh(existing)
+        return existing
+
+    async def delete(self, id: int) -> None:
+        existing = await self.get(id)
+        if existing:
+            await self.soft_delete(existing)
+        return None
+
+    async def create(self, img_url: str, description: str, department_id: int) -> EmployeeComponent:
         component = EmployeeComponent(img_url=img_url, description=description, department_id=department_id)
-        self.db.add(component)
-        await self.db.commit()
-        await self.db.refresh(component)
+        self.session.add(component)
+        await self.session.commit()
+        await self.session.refresh(component)
         return component
 
-    async def update(self, id, **kwargs):
-        """Update an existing employee component by ID with provided fields."""
-        component = await self.get_by_id(id)
-        if not component:
-            return None
-        for k, v in kwargs.items():
-            if hasattr(component, k):
-                setattr(component, k, v)
-        await self.db.commit()
-        return component
+    # Service layer compatibility methods
+    async def get_all(self) -> List[EmployeeComponent]:
+        """Get all employee components."""
+        return await self.list(limit=1000, offset=0)
 
-    async def delete(self, id):
-        """Delete an employee component by its ID."""
-        component = await self.get_by_id(id)
-        if not component:
-            return False
-        await self.db.delete(component)
-        await self.db.commit()
-        return True
+    async def get_by_id(self, id: int) -> Optional[EmployeeComponent]:
+        """Alias for get() to match service layer expectations."""
+        return await self.get(id)
+
+    async def get_by_department(self, department_id: int) -> List[EmployeeComponent]:
+        """Get employee components for a specific department."""
+        result = await self.session.execute(select(EmployeeComponent).filter(EmployeeComponent.department_id == department_id))
+        return list(result.scalars().all())

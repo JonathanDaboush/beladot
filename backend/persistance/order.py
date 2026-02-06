@@ -8,7 +8,12 @@
 # and related models are defined elsewhere.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Numeric, DateTime, Enum, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Numeric, DateTime, Enum, ForeignKey, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
 from .enums import OrderStatusEnum
@@ -30,12 +35,14 @@ class Order(Base):
         # Relationships to order items and related models are defined elsewhere.
     """
     __tablename__ = 'order'
-    order_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    cart_id = Column(BigInteger, ForeignKey('cart.cart_id'), nullable=True)
-    order_status = Column(Enum(OrderStatusEnum))
-    total_amount = Column(Numeric(10,2))
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    order_number = Column(BigInteger)
+    order_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    cart_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('cart.cart_id'), nullable=True)
+    product_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('product.product_id'), nullable=True)
+    order_status: Mapped[OrderStatusEnum] = mapped_column(Enum(OrderStatusEnum))
+    total_amount: Mapped[float] = mapped_column(Numeric(10,2))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    order_number: Mapped[int] = mapped_column(BigInteger)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Relationships (to be completed in related models)

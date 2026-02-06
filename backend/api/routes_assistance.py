@@ -18,12 +18,14 @@ def require_role(role: str):
     return dependency
 
 # Dummy service for tests / startup
+from typing import Any, Dict
+
 async def dummy_assistance_service():
     class DummyService:
-        async def send_customer_refund_status_email(self, **kwargs):
+        async def send_customer_refund_status_email(self, **kwargs: Any) -> Dict[str, Any]:
             return kwargs
 
-        async def process_customer_complaint(self, **kwargs):
+        async def process_customer_complaint(self, **kwargs: Any) -> Dict[str, Any]:
             return kwargs
 
     return DummyService()
@@ -31,9 +33,8 @@ async def dummy_assistance_service():
 @router.post("/refund-status", response_model=AssistanceRefundStatusResponse)
 async def send_refund_status_email(
     payload: AssistanceRefundStatusEmail,
-    # assistanceService dependency removed for import safety
-    identity=Depends(require_role("user")),
-        db=Depends(get_db),
+    identity: dict = Depends(require_role("user")),
+    db: Any = Depends(get_db),
 ):
     result = await customerAssistanceServices.send_customer_refund_status_email(user_id=identity["user_id"], db=db, **payload.model_dump())
     return {"result": result}
@@ -41,9 +42,8 @@ async def send_refund_status_email(
 @router.post("/complaint", response_model=AssistanceComplaintResponse)
 async def process_complaint(
     complaint: AssistanceComplaint,
-    # assistanceService dependency removed for import safety
-    identity=Depends(require_role("user")),
-        db=Depends(get_db),
+    identity: dict = Depends(require_role("user")),
+    db: Any = Depends(get_db),
 ):
     result = await customerAssistanceServices.process_customer_complaint(user_id=identity["user_id"], db=db, **complaint.model_dump())
     return {"result": result}

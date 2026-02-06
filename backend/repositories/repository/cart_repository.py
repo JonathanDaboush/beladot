@@ -6,50 +6,52 @@
 # Provides async CRUD methods for carts.
 # ------------------------------------------------------------------------------
 
-from typing import Optional
+from typing import List, Optional
 from backend.persistance.cart import Cart
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-class CartRepository:
-    """
-    Repository for Cart model.
-    Provides async CRUD operations for carts.
-    """
-    def __init__(self, db: AsyncSession):
-        """Initialize repository with DB session."""
-        self.db = db
+from backend.repositories.base_repository import BaseRepository
 
-    async def get_by_id(self, cart_id: int) -> Optional[Cart]:
-        """Retrieve a cart by its ID."""
-        result = await self.db.execute(
-            select(Cart).filter(Cart.cart_id == cart_id)
+
+class CartRepository(BaseRepository[Cart, int]):
+    """Repository for Cart model implementing BaseRepository contract."""
+    def __init__(self, session: AsyncSession):
+        super().__init__(session)
+
+    UPDATABLE_FIELDS = {"updated_at"}
+
+    async def get(self, id: int) -> Optional[Cart]:
+        result = await self.session.execute(
+            select(Cart).filter(Cart.cart_id == id)
         )
         return result.scalars().first()
 
-    async def save(self, cart: Cart) -> Cart:
-        """Save a new cart to the database."""
-        self.db.add(cart)
-        await self.db.commit()
-        await self.db.refresh(cart)
-        return cart
+    async def list(self, *, limit: int = 100, offset: int = 0) -> List[Cart]:
+        BaseRepository.validate_pagination(limit, offset)
+        result = await self.session.execute(
+            select(Cart).limit(limit).offset(offset)
+        )
+        items: List[Cart] = list(result.scalars().all())
+        return items
 
-    async def update(self, cart_id: int, **kwargs) -> Optional[Cart]:
-        """Update an existing cart by ID with provided fields."""
-        cart = await self.get_by_id(cart_id)
-        if not cart:
-            return None
-        for k, v in kwargs.items():
-            if hasattr(cart, k):
-                setattr(cart, k, v)
-        await self.db.commit()
-        return cart
+    async def add(self, obj: Cart) -> Cart:
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
 
-    async def delete(self, cart_id: int) -> bool:
-        """Delete a cart by its ID."""
-        cart = await self.get_by_id(cart_id)
-        if cart:
-            self.db.delete(cart)
-            await self.db.commit()
-            return True
-        return False
+    async def update(self, id: int, obj: Cart) -> Cart:
+        existing = await self.get(id)
+        if not existing:
+            raise ValueError(f"Cart with id {id} not found")
+        self.apply_whitelist_update(existing, obj, self.UPDATABLE_FIELDS)
+        await self.session.commit()
+        await self.session.refresh(existing)
+        return existing
+
+    async def delete(self, id: int) -> None:
+        existing = await self.get(id)
+        if existing:
+            await self.soft_delete(existing)
+        return None

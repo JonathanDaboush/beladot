@@ -32,12 +32,13 @@ class EmployeeEditRequest(BaseModel):
 
 
 
+
 @router.post("/incident", response_model=Any)
 async def create_incident_report(
     payload: IncidentCreateRequest,
-    identity=Depends(require_role("manager")),
+    identity: dict[str, Any] = Depends(require_role("manager")),
     db: AsyncSession = Depends(get_db)
-):
+) -> Any:
     service = ManagerService(db)
     return await service.create_incident_report(
         manager_id=identity["manager_id"],
@@ -47,13 +48,14 @@ async def create_incident_report(
         date=payload.date
     )
 
+
 @router.put("/employee/{employee_id}", response_model=Any)
 async def edit_employee_info(
     employee_id: int,
     payload: EmployeeEditRequest,
-    identity=Depends(require_role("manager")),
+    identity: dict[str, Any] = Depends(require_role("manager")),
     db: AsyncSession = Depends(get_db)
-):
+) -> Any:
     service = ManagerService(db)
     return await service.edit_employee_info(
         manager_id=identity["manager_id"],

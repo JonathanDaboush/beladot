@@ -1,0 +1,11 @@
+{
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "reportGeneralTypeIssues": false,
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "backend/**"
+  ]
+}

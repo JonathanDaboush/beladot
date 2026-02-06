@@ -9,6 +9,7 @@ Repository class for managing ShipmentIssue entities in the database.
 Provides async methods for retrieving and updating shipment issues by ID.
 """
 
+from typing import Optional
 from backend.persistance.shipment_issue import ShipmentIssue
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -22,7 +23,7 @@ class ShipmentIssueRepository:
         """
         self.db = db
 
-    async def get_by_id(self, issue_id):
+    async def get_by_id(self, issue_id: int) -> Optional[ShipmentIssue]:
         """
         Retrieve a shipment issue by its ID.
         Args:
@@ -35,7 +36,7 @@ class ShipmentIssueRepository:
         )
         return result.scalars().first()
 
-    async def update(self, issue_id, **kwargs):
+    async def update(self, issue_id: int, **kwargs) -> Optional[ShipmentIssue]:
         """
         Update a shipment issue by ID.
         Args:
@@ -52,3 +53,16 @@ class ShipmentIssueRepository:
                 setattr(issue, k, v)
         await self.db.commit()
         return issue
+
+    async def save(self, obj: ShipmentIssue) -> ShipmentIssue:
+        """
+        Save a shipment issue entity.
+        Args:
+            obj (ShipmentIssue): The shipment issue to save.
+        Returns:
+            ShipmentIssue: The saved shipment issue.
+        """
+        self.db.add(obj)
+        await self.db.commit()
+        await self.db.refresh(obj)
+        return obj

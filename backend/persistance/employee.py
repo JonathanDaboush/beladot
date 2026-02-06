@@ -8,11 +8,13 @@
 # Relationships to PTO, sick days, shifts, and payments are defined elsewhere.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, ForeignKey, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import BigInteger, ForeignKey, String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
+
 class Employee(Base):
+    name: str = ''
     """
     ORM model for the 'employee' table.
     Represents an employee in the organization.
@@ -24,8 +26,10 @@ class Employee(Base):
         # Relationships to PTO, sick days, shifts, and payments are defined elsewhere.
     """
     __tablename__ = 'employee'
-    emp_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    department_id = Column(BigInteger, ForeignKey('department.department_id'))
-    notes = Column(String(255), nullable=True)  # Temporary field for update testing
-    # Relationships (to be completed in employee_pto.py, employee_sickday.py, shift.py, shift_request.py, finance_employee.py, employee_payment.py)
+    emp_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    department_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('department.department_id'))
+    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Temporary field for update testing
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+# Relationships (to be completed in employee_pto.py, employee_sickday.py, shift.py, shift_request.py, finance_employee.py, employee_payment.py)

@@ -8,6 +8,7 @@ Repository class for managing SellerSnapshot entities in the database.
 Provides async method for retrieving seller snapshots by store name.
 """
 
+from typing import Optional
 from backend.persistance.seller_snapshot import SellerSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -21,7 +22,7 @@ class SellerSnapshotRepository:
         """
         self.db = db
 
-    async def get_by_id(self, store_name):
+    async def get_by_id(self, store_name: str) -> Optional[SellerSnapshot]:
         """
         Retrieve a seller snapshot by store name.
         Args:

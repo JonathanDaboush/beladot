@@ -11,52 +11,47 @@ from backend.persistance.cart_item import CartItem
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-class CartItemRepository:
-    """
-    Repository for CartItem model.
-    Provides async CRUD operations for cart items.
-    """
-    def __init__(self, db: AsyncSession):
-        """Initialize repository with the given database session."""
-        self.db = db
+from backend.repositories.base_repository import BaseRepository
 
-    async def get_by_cart_id(self, cart_id: int) -> List[CartItem]:
-        """Retrieve all cart items for a given cart ID."""
-        result = await self.db.execute(
-            select(CartItem).filter(CartItem.cart_id == cart_id)
-        )
-        return result.scalars().all()
 
-    async def get_by_id(self, cart_item_id: int) -> Optional[CartItem]:
-        """Retrieve a cart item by its ID."""
-        result = await self.db.execute(
-            select(CartItem).filter(CartItem.cart_item_id == cart_item_id)
+class CartItemRepository(BaseRepository[CartItem, int]):
+    """Repository for CartItem model implementing BaseRepository contract."""
+    def __init__(self, session: AsyncSession):
+        super().__init__(session)
+
+    UPDATABLE_FIELDS = {"quantity", "variant_id"}
+
+    async def get(self, id: int) -> Optional[CartItem]:
+        result = await self.session.execute(
+            select(CartItem).filter(CartItem.cart_item_id == id)
         )
         return result.scalars().first()
 
-    async def save(self, cart_item: CartItem) -> CartItem:
-        """Save a new cart item to the database."""
-        self.db.add(cart_item)
-        await self.db.commit()
-        await self.db.refresh(cart_item)
-        return cart_item
+    async def list(self, *, limit: int = 100, offset: int = 0) -> List[CartItem]:
+        BaseRepository.validate_pagination(limit, offset)
+        result = await self.session.execute(
+            select(CartItem).limit(limit).offset(offset)
+        )
+        items: List[CartItem] = list(result.scalars().all())
+        return items
 
-    async def update(self, cart_item_id: int, **kwargs) -> Optional[CartItem]:
-        """Update an existing cart item by ID with provided fields."""
-        cart_item = await self.get_by_id(cart_item_id)
-        if not cart_item:
-            return None
-        for k, v in kwargs.items():
-            if hasattr(cart_item, k):
-                setattr(cart_item, k, v)
-        await self.db.commit()
-        return cart_item
+    async def add(self, obj: CartItem) -> CartItem:
+        self.session.add(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
+        return obj
 
-    async def delete(self, cart_item_id: int) -> bool:
-        """Delete a cart item by its ID."""
-        cart_item = await self.get_by_id(cart_item_id)
-        if cart_item:
-            self.db.delete(cart_item)
-            await self.db.commit()
-            return True
-        return False
+    async def update(self, id: int, obj: CartItem) -> CartItem:
+        existing = await self.get(id)
+        if not existing:
+            raise ValueError(f"CartItem with id {id} not found")
+        self.apply_whitelist_update(existing, obj, self.UPDATABLE_FIELDS)
+        await self.session.commit()
+        await self.session.refresh(existing)
+        return existing
+
+    async def delete(self, id: int) -> None:
+        existing = await self.get(id)
+        if existing:
+            await self.soft_delete(existing)
+        return None

@@ -7,7 +7,11 @@
 # record for an incident. Tracks incident, description, response, amount, and status flags.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String, Float, Boolean, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+from sqlalchemy import BigInteger, String, Float, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 class Reimbursement(Base):
@@ -27,13 +31,14 @@ class Reimbursement(Base):
         deleted (Boolean): Whether the reimbursement record is deleted (soft delete).
     """
     __tablename__ = 'reimbursement'
-    reimbursement_id = Column(BigInteger, primary_key=True)
+    reimbursement_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     # employee_id removed, now on Incident
-    incident_id = Column(BigInteger, ForeignKey('incident.incident_id'))
-    description = Column(String(255))
-    response = Column(String(255), nullable=True)
-    amount_approved = Column(Float, nullable=True)
-    status = Column(Boolean, default=False)
-    status_addressed = Column(Boolean, default=False)
-    paid_all = Column(Boolean, default=False)
-    deleted = Column(Boolean, default=False)
+    incident_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('incident.incident_id'))
+    description: Mapped[str] = mapped_column(String(255))
+    response: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    amount_approved: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    status: Mapped[bool] = mapped_column(Boolean, default=False)
+    status_addressed: Mapped[bool] = mapped_column(Boolean, default=False)
+    paid_all: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

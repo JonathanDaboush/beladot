@@ -3,10 +3,10 @@ from backend.repositories.repository.employee_repository import EmployeeReposito
 from backend.repositories.repository.shift_repository import ShiftRepository
 from backend.repositories.repository.employee_pto_repository import EmployeePTORepository
 from backend.repositories.repository.employee_sickday_repository import EmployeeSickDayRepository
-from backend.models.model.incident import Incident
-from backend.models.model.shift import Shift
-from backend.models.model.employee_pto import EmployeePTO
-from backend.models.model.employee_sickday import EmployeeSickDay
+from backend.persistance.incident import Incident
+from backend.persistance.shift import Shift
+from backend.persistance.employee_pto import EmployeePTO
+from backend.persistance.employee_sickday import EmployeeSickDay
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class ManagerService:
@@ -48,8 +48,10 @@ class ManagerService:
             description=description,
             cost=cost,
             date=date,
+            status='open',
             status_addressed=False,
-            paid_all=False
+            paid_all=False,
+            deleted=False
         )
         await self.incident_repo.save(incident)
         return incident

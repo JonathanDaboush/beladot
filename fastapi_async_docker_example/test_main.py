@@ -36,7 +36,7 @@ from httpx import ASGITransport
 
 @pytest.mark.asyncio
 async def test_create_item():
-    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:  # type: ignore
         response = await ac.post("/items", json={"name": "TestItem"})
         assert response.status_code == 200
         assert response.json()["name"] == "TestItem"

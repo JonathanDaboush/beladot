@@ -77,7 +77,7 @@ class CalendarService:
                 else:
                     calendar[emp_id] = {
                         'employee_name': emp.name,
-                        'shifts': [{'date': s.start_time.date()} for s in shifts],
+                        'shifts': [{'date': s.start_time.date()} if s.start_time is not None else {'date': None} for s in shifts],
                         'pto': [],
                         'sickdays': [],
                     }

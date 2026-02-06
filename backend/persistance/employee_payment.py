@@ -7,9 +7,15 @@
 # to an employee. Includes payment amount, type, status, and processing details.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Numeric, String, DateTime, Enum, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Numeric, String, DateTime, Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 from .enums import PayoutStatusEnum
+
 
 class EmployeePayment(Base):
     """
@@ -28,12 +34,12 @@ class EmployeePayment(Base):
         # Relationships to employee and finance_employee are defined elsewhere.
     """
     __tablename__ = 'employee_payment'
-    payment_id = Column(BigInteger, primary_key=True)
-    emp_id = Column(BigInteger, ForeignKey('employee.emp_id'))
-    amount = Column(Numeric(10,2))
-    payment_type = Column(String(50))
-    status = Column(Enum(PayoutStatusEnum))
-    processed_by_finance_emp_id = Column(BigInteger, ForeignKey('finance_employee.finance_emp_id'))
-    created_at = Column(DateTime)
-    paid_at = Column(DateTime)
+    payment_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    emp_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('employee.emp_id'))
+    amount: Mapped[float] = mapped_column(Numeric(10,2))
+    payment_type: Mapped[str] = mapped_column(String(50))
+    status: Mapped[PayoutStatusEnum] = mapped_column(Enum(PayoutStatusEnum))
+    processed_by_finance_emp_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('finance_employee.finance_emp_id'))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    paid_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in employee.py, finance_employee.py)

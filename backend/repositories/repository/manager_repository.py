@@ -6,6 +6,7 @@
 # Provides methods for retrieving managers by ID.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.manager import Manager
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,7 @@ class ManagerRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, manager_id):
+    async def get_by_id(self, manager_id: int) -> Optional[Manager]:
         """Async retrieve a manager by their ID."""
         result = await self.db.execute(select(Manager).where(Manager.manager_id == manager_id))
         return result.scalar_one_or_none()

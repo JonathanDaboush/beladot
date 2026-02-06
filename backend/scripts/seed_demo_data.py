@@ -8,7 +8,7 @@ import string
 from sqlalchemy import select, func
 
 ## Removed ensure_sqlite_schema import; not needed for Postgres
-from backend.persistance.base import get_sessionmaker
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.persistance.user import User
 from backend.persistance.department import Department
 from backend.persistance.employee import Employee
@@ -33,23 +33,23 @@ DEPARTMENTS = [
 ]
 
 
-def upsert_departments(session):
+async def upsert_departments(session):
     created = []
     for dep_id, name in DEPARTMENTS:
-        existing = session.execute(
-            select(Department).where(Department.department_id == dep_id)
-        ).scalar_one_or_none()
+        result = await session.execute(select(Department).where(Department.department_id == dep_id))
+        existing = result.scalar_one_or_none()
         if not existing:
             d = Department(department_id=dep_id, name=name)
             session.add(d)
             created.append(d)
     if created:
-        session.flush()
+        await session.flush()
     return created
 
 
-def _next_pk(session, model, pk_attr):
-    current_max = session.execute(select(func.max(pk_attr))).scalar()
+async def _next_pk(session, model, pk_attr):
+    result = await session.execute(select(func.max(pk_attr)))
+    current_max = result.scalar()
     return (current_max or 0) + 1
 
 
@@ -60,10 +60,10 @@ def gen_password(prefix: str, unique: int | str) -> str:
     return f"{prefix}-{unique}-{rand}!"
 
 
-def create_user(session, full_name: str, email: str, password: str) -> User:
-    existing = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+async def create_user(session, full_name: str, email: str, password: str) -> User:
+    result = await session.execute(select(User).where(User.email == email))
+    existing = result.scalar_one_or_none()
     if existing:
-        # Idempotent: do not modify existing user credentials
         return existing
     u = User(
         full_name=full_name,
@@ -76,30 +76,32 @@ def create_user(session, full_name: str, email: str, password: str) -> User:
         account_status="True",
     )
     session.add(u)
-    session.flush()
+    await session.flush()
     return u
 
 
-def create_employee(session, user_id: int, department_id: int) -> Employee:
-    existing = session.execute(
+async def create_employee(session, user_id: int, department_id: int) -> Employee:
+    result = await session.execute(
         select(Employee).where(Employee.user_id == user_id, Employee.department_id == department_id)
-    ).scalars().first()
+    )
+    existing = result.scalars().first()
     if existing:
         return existing
-    emp_id = _next_pk(session, Employee, Employee.emp_id)
+    emp_id = await _next_pk(session, Employee, Employee.emp_id)
     e = Employee(emp_id=emp_id, user_id=user_id, department_id=department_id, notes=None)
     session.add(e)
-    session.flush()
+    await session.flush()
     return e
 
 
-def create_manager(session, user_id: int, department_id: int) -> Manager:
-    existing = session.execute(
+async def create_manager(session, user_id: int, department_id: int) -> Manager:
+    result = await session.execute(
         select(Manager).where(Manager.user_id == user_id, Manager.department_id == department_id)
-    ).scalars().first()
+    )
+    existing = result.scalars().first()
     if existing:
         return existing
-    manager_id = _next_pk(session, Manager, Manager.manager_id)
+    manager_id = await _next_pk(session, Manager, Manager.manager_id)
     now = datetime.now(UTC)
     m = Manager(
         manager_id=manager_id,
@@ -110,17 +112,18 @@ def create_manager(session, user_id: int, department_id: int) -> Manager:
         last_active_at=now,
     )
     session.add(m)
-    session.flush()
+    await session.flush()
     return m
 
 
-def create_finance_employee(session, emp: Employee) -> FinanceEmployee:
-    existing = session.execute(
+async def create_finance_employee(session, emp: Employee) -> FinanceEmployee:
+    result = await session.execute(
         select(FinanceEmployee).where(FinanceEmployee.emp_id == emp.emp_id)
-    ).scalars().first()
+    )
+    existing = result.scalars().first()
     if existing:
         return existing
-    fe_id = _next_pk(session, FinanceEmployee, FinanceEmployee.finance_emp_id)
+    fe_id = await _next_pk(session, FinanceEmployee, FinanceEmployee.finance_emp_id)
     now = datetime.now(UTC)
     fe = FinanceEmployee(
         finance_emp_id=fe_id,
@@ -130,25 +133,22 @@ def create_finance_employee(session, emp: Employee) -> FinanceEmployee:
         last_active_at=now,
     )
     session.add(fe)
-    session.flush()
+    await session.flush()
     return fe
 
 
-def main():
-    # No schema creation needed for Postgres
-    Session = get_sessionmaker()
-
+import asyncio
+async def main():
     credentials = []
-    with Session() as session:
-        # Departments
-        upsert_departments(session)
+    async with AsyncSessionLocal() as session:
+        await upsert_departments(session)
 
         # Human users (customers)
         for i in range(1, ROLES_TO_CREATE["user"] + 1):
             name = f"Demo User {i}"
             email = f"user{i}@example.com"
             password = gen_password("usr", i)
-            u = create_user(session, name, email, password)
+            u = await create_user(session, name, email, password)
             credentials.append(("user", email, password))
 
         # Sellers (as regular users; app uses headers for roles)
@@ -156,7 +156,7 @@ def main():
             name = f"Demo Seller {i}"
             email = f"seller{i}@example.com"
             password = gen_password("slr", i)
-            u = create_user(session, name, email, password)
+            u = await create_user(session, name, email, password)
             credentials.append(("seller", email, password))
 
         # Employees by department
@@ -171,10 +171,10 @@ def main():
                 name = f"{role_key.replace('_', ' ').title()} Emp {i}"
                 email = f"{role_key}{i}@example.com"
                 password = gen_password(role_key[:3], i)
-                u = create_user(session, name, email, password)
-                emp = create_employee(session, u.user_id, dep_id)
+                u = await create_user(session, name, email, password)
+                emp = await create_employee(session, u.user_id, dep_id)
                 if role_key == "finance":
-                    create_finance_employee(session, emp)
+                    await create_finance_employee(session, emp)
                 credentials.append((role_key, email, password))
 
         # Managers: 3 per department
@@ -183,19 +183,16 @@ def main():
                 name = f"{dep_name} Manager {i}"
                 email = f"mgr_{dep_id}_{i}@example.com"
                 password = gen_password("mgr", f"{dep_id}{i}")
-                u = create_user(session, name, email, password)
-                create_manager(session, u.user_id, dep_id)
+                u = await create_user(session, name, email, password)
+                await create_manager(session, u.user_id, dep_id)
                 credentials.append((f"manager:{dep_name}", email, password))
 
-        session.commit()
+        await session.commit()
 
-    # Print a friendly summary of credentials
     print("\n=== Seeded Demo Accounts ===")
     for role, email, pwd in credentials:
         print(f"{role}: {email} | {pwd}")
 
-
 if __name__ == "__main__":
-    # Default ENV to dev if not set to ensure local-safe settings
     os.environ.setdefault("ENV", "dev")
-    main()
+    asyncio.run(main())

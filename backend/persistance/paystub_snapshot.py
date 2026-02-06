@@ -8,8 +8,14 @@
 # auditing purposes.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, String, Integer, Float, BigInteger, DateTime
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import String, Integer, Float, BigInteger, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
+
 
 class PaystubSnapshot(Base):
     """
@@ -29,13 +35,13 @@ class PaystubSnapshot(Base):
         created_at (DateTime): Timestamp when the snapshot was created.
     """
     __tablename__ = 'paystub_snapshot'
-    employee_name = Column(String(255), primary_key=True)
-    incident_number = Column(BigInteger)
-    hours_worked = Column(Float)
-    sick_days = Column(Integer)
-    pto_days = Column(Integer)
-    hourly_rate = Column(Float)
-    gross_pay = Column(Float)
-    deductions = Column(Float)
-    net_pay = Column(Float)
-    created_at = Column(DateTime)
+    employee_name: Mapped[str] = mapped_column(String(255), primary_key=True)
+    incident_number: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    hours_worked: Mapped[float] = mapped_column(Float)
+    sick_days: Mapped[int] = mapped_column(Integer)
+    pto_days: Mapped[int] = mapped_column(Integer)
+    hourly_rate: Mapped[float] = mapped_column(Float)
+    gross_pay: Mapped[float] = mapped_column(Float)
+    deductions: Mapped[float] = mapped_column(Float)
+    net_pay: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)

@@ -7,7 +7,11 @@
 # associated with a seller. Each component has an image URL and a description.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, Integer, String
+from __future__ import annotations
+
+from typing import Any
+from sqlalchemy import Integer, String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 class SellerComponent(Base):
@@ -21,6 +25,7 @@ class SellerComponent(Base):
         description (String): Textual description of the component.
     """
     __tablename__ = 'seller_component'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    img_url = Column(String, nullable=False)
-    description = Column(String, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    img_url: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

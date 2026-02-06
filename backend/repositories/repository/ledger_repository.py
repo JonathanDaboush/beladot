@@ -6,7 +6,8 @@
 # Provides async methods for saving ledger entries.
 # ------------------------------------------------------------------------------
 
-from backend.models.model.ledger import LedgerEntry
+from typing import Any
+from backend.persistance.ledger import LedgerEntry
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class LedgerRepository:
@@ -18,7 +19,7 @@ class LedgerRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def save(self, ledger_entry):
+    async def save(self, ledger_entry: LedgerEntry) -> LedgerEntry:
         """Save a new ledger entry to the database."""
         self.db.add(ledger_entry)
         await self.db.commit()

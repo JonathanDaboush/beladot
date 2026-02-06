@@ -6,6 +6,7 @@
 # Provides async methods for retrieving payments by ID.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.payment import Payment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,7 +20,7 @@ class PaymentRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, payment_id):
+    async def get_by_id(self, payment_id: int) -> Optional[Payment]:
         """Retrieve a payment by its ID."""
         result = await self.db.execute(
             select(Payment).filter(Payment.payment_id == payment_id)

@@ -56,6 +56,9 @@ async def create_seller_payout(db: AsyncSession, seller_id: int, amount: float, 
         status=status,
         created_at=datetime.now()
     )
+    repo = SellerPayoutRepository(db)
+    return await repo.save(payout)
+
 async def create_reimbursement(db: AsyncSession, employee_id: int, incident_id: int, description: str, amount_approved: float, status: bool = True) -> Reimbursement:
     """
     Create a reimbursement record and save it to the database.

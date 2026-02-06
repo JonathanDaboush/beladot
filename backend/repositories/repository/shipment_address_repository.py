@@ -5,6 +5,7 @@ Repository class for managing ShipmentAddress entities in the database.
 Provides async method for retrieving shipment addresses by ID.
 """
 
+from typing import Optional
 from backend.persistance.shipment_address import ShipmentAddress
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -18,13 +19,13 @@ class ShipmentAddressRepository:
         """
         self.db = db
 
-    async def get_by_id(self, shipment_address_id):
+    async def get_by_id(self, shipment_address_id: int) -> Optional[ShipmentAddress]:
         """
         Retrieve a shipment address by its ID.
         Args:
             shipment_address_id (int): The ID of the shipment address.
         Returns:
-            ShipmentAddress or None
+            Optional[ShipmentAddress]
         """
         result = await self.db.execute(
             select(ShipmentAddress).filter(ShipmentAddress.shipment_address_id == shipment_address_id)

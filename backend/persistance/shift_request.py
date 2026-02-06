@@ -7,7 +7,8 @@
 # shift by an employee. Tracks shift, requesting employee, manager, and status.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Enum, ForeignKey
+from sqlalchemy import BigInteger, Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
 from .enums import PTOStatusEnum
@@ -26,9 +27,9 @@ class ShiftRequest(Base):
         # Relationships to shift, employee, and manager are defined elsewhere.
     """
     __tablename__ = 'shift_request'
-    shift_request_id = Column(BigInteger, primary_key=True)
-    shift_id = Column(BigInteger, ForeignKey('shift.shift_id'))
-    requesting_emp_id = Column(BigInteger, ForeignKey('employee.emp_id'))
-    approved_by_manager_id = Column(BigInteger, ForeignKey('manager.manager_id'))
-    status = Column(Enum(PTOStatusEnum))
+    shift_request_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    shift_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('shift.shift_id'))
+    requesting_emp_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('employee.emp_id'))
+    approved_by_manager_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('manager.manager_id'))
+    status: Mapped['PTOStatusEnum'] = mapped_column(Enum(PTOStatusEnum))
     # Relationships (to be completed in shift.py, employee.py, manager.py)

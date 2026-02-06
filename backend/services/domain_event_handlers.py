@@ -32,20 +32,23 @@ async def handle_refund_event(event: DomainEvent, db: AsyncSession) -> Optional[
     if not refund:
         raise Exception('Refund request not found')
     # Only allow if pending
-    if refund.status != RefundRequestStatus.PENDING:
+    if refund.status != RefundRequestStatus.PENDING.value:
         raise Exception('Refund request already processed')
     if event.event_type == DomainEventType.REFUND_APPROVED:
-        refund.status = RefundRequestStatus.APPROVED
+        refund.status = RefundRequestStatus.APPROVED.value
         action = 'approved'
     elif event.event_type == DomainEventType.REFUND_DENIED:
-        refund.status = RefundRequestStatus.DENIED
+        refund.status = RefundRequestStatus.DENIED.value
         action = 'rejected'
     else:
         raise Exception('Invalid refund event type')
     if 'description' in event.payload:
-        refund.description = event.payload['description']
+        desc_val = event.payload['description']
+        refund.description = str(desc_val) if desc_val is not None else None
     await db.commit()
-    ledger_entry = RefundLedger(refund_id=refund.refund_request_id, action=action, amount=getattr(refund, 'refund_amount', 0))
+    # Import the persistance model for RefundLedger
+    from backend.persistance.refund_ledger import RefundLedger as RefundLedgerModel
+    ledger_entry = RefundLedgerModel(refund_id=refund.refund_request_id, action=action, amount=getattr(refund, 'refund_amount', 0))
     await ledger_repo.save(ledger_entry)
     # Optionally emit notifications here
     return refund

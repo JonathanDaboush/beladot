@@ -1,9 +1,10 @@
+
 import os
 from typing import Dict, Iterable, Tuple
 from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import select
-
-from backend.persistance.base import get_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from backend.persistance.async_base import AsyncSessionLocal
 from backend.db.init_schema import ensure_sqlite_schema
 from backend.persistance.category import Category
 from backend.persistance.subcategory import Subcategory
@@ -55,7 +56,12 @@ def _draw_centered_text(img: Image.Image, text: str) -> None:
         try:
             font = ImageFont.truetype(fname, size=64)
             break
-        except Exception:
+        except Exception as e:
+            try:
+                from backend.infrastructure.structured_logging import logger
+                logger.debug("font.load_failed", font_path=fname, error=str(e))
+            except Exception:
+                pass
             continue
     if font is None:
         font = ImageFont.load_default()
@@ -66,9 +72,18 @@ def _draw_centered_text(img: Image.Image, text: str) -> None:
         bbox = draw.textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
-    except Exception:
-        # Older Pillow versions
-        tw, th = draw.textsize(text, font=font)
+    except Exception as e:
+        try:
+            from backend.infrastructure.structured_logging import logger
+            logger.debug("textbbox.failed", error=str(e))
+        except Exception:
+            pass
+        # Fallback for very old Pillow versions
+        try:
+            tw, th = draw.textsize(text, font=font)  # type: ignore[attr-defined]
+        except AttributeError:
+            # If textsize doesn't exist, use a default size
+            tw, th = 500, 100
     x = (W - tw) // 2
     y = (H - th) // 2
     # Draw shadow for contrast
@@ -78,7 +93,7 @@ def _draw_centered_text(img: Image.Image, text: str) -> None:
     draw.text((x, y), text, font=font, fill=(255, 255, 255))
 
 
-def generate_missing_images(names: Iterable[str]) -> int:
+async def generate_missing_images(names: Iterable[str]) -> int:
     _ensure_dir(ASSETS_DIR)
     index = _file_index(ASSETS_DIR)
     created = 0
@@ -94,7 +109,12 @@ def generate_missing_images(names: Iterable[str]) -> int:
         try:
             img.save(out_path, format="JPEG", quality=92)
             created += 1
-        except Exception:
+        except Exception as e:
+            try:
+                from backend.infrastructure.structured_logging import logger
+                logger.exception("image.save_failed", out_path=out_path, error=str(e))
+            except Exception:
+                pass
             # If Windows path or name causes issues, fallback to underscores
             safe_name = display_name.replace('/', '_').replace('\\', '_')
             safe_fname = safe_name + ".jpg"
@@ -104,16 +124,17 @@ def generate_missing_images(names: Iterable[str]) -> int:
     return created
 
 
-def main() -> None:
+import asyncio
+
+async def main() -> None:
     ensure_sqlite_schema()
-    Session = get_sessionmaker()
-    with Session() as session:
-        cat_names = [c.name for c in session.execute(select(Category)).scalars().all()]
-        sub_names = [s.name for s in session.execute(select(Subcategory)).scalars().all()]
+    async with AsyncSessionLocal() as session:
+        cat_names = [c.name async for c in (await session.stream_scalars(select(Category)))]
+        sub_names = [s.name async for s in (await session.stream_scalars(select(Subcategory)))]
     # Generate for both sets; duplicates are skipped by filename index
-    total_created = generate_missing_images(cat_names + sub_names)
+    total_created = await generate_missing_images(cat_names + sub_names)
     print(f"Generated images: {total_created}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

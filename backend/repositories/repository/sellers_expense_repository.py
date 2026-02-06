@@ -5,6 +5,7 @@ Repository class for managing SellerExpense entities in the database.
 Provides async CRUD operations for seller expenses.
 """
 
+from typing import Optional
 from backend.persistance.sellers_expense import SellerExpense
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -18,7 +19,7 @@ class SellerExpenseRepository:
         """
         self.db = db
 
-    async def get_by_id(self, expense_id):
+    async def get_by_id(self, expense_id: int) -> Optional[SellerExpense]:
         """
         Retrieve a seller expense by ID.
         Args:
@@ -31,7 +32,7 @@ class SellerExpenseRepository:
         )
         return result.scalars().first()
 
-    async def save(self, seller_expense):
+    async def save(self, seller_expense: SellerExpense) -> SellerExpense:
         """
         Save a new seller expense to the database.
         Args:
@@ -44,7 +45,7 @@ class SellerExpenseRepository:
         await self.db.refresh(seller_expense)
         return seller_expense
 
-    async def update(self, expense_id, **kwargs):
+    async def update(self, expense_id: int, **kwargs) -> Optional[SellerExpense]:
         """
         Update a seller expense by ID.
         Args:
@@ -62,7 +63,7 @@ class SellerExpenseRepository:
         await self.db.commit()
         return expense
 
-    async def delete(self, expense_id):
+    async def delete(self, expense_id: int) -> bool:
         """
         Delete a seller expense by ID.
         Args:

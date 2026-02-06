@@ -8,9 +8,15 @@
 # and payment records.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Boolean, DateTime, ForeignKey
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from .base import Base
+
 
 class FinanceEmployee(Base):
     """
@@ -26,9 +32,9 @@ class FinanceEmployee(Base):
         # Relationships to employee and employee_payment are defined elsewhere.
     """
     __tablename__ = 'finance_employee'
-    finance_emp_id = Column(BigInteger, primary_key=True)
-    emp_id = Column(BigInteger, ForeignKey('employee.emp_id'))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
-    last_active_at = Column(DateTime)
+    finance_emp_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    emp_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('employee.emp_id'))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    last_active_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in employee.py, employee_payment.py)

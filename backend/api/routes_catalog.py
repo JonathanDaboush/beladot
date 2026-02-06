@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from urllib.parse import quote
-from typing import List, Optional
+from typing import List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -32,7 +32,7 @@ def _static_url(path: str | None) -> str | None:
         raw = f"/static/{normalized.lstrip('/')}"
     return quote(raw, safe="/")
 
-def _serialize_product_basic(p: Product, image_url: Optional[str] = None):
+def _serialize_product_basic(p: Product, image_url: Optional[str] = None) -> dict[str, Any]:
     return {
         "id": p.product_id,
         "name": getattr(p, "title", None) or "Product",
@@ -51,7 +51,7 @@ def _serialize_product_basic(p: Product, image_url: Optional[str] = None):
     }
 
 @catalog_router.get("/products")
-async def list_products(db: AsyncSession = Depends(get_db)):
+async def list_products(db: AsyncSession = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
     """Public: list active products. Minimal fields for catalog browsing."""
     cols = (
         Product.product_id,
@@ -65,12 +65,12 @@ async def list_products(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(*cols).filter(Product.is_active == True))
     rows = result.all()
     image_repo = ProductImageRepository(db)
-    items = []
+    items: list[dict[str, Any]] = []
     for row in rows:
         pid = row[0]
         images = await image_repo.get_by_product_id(pid)
         # Primary product image (if any), normalized
-        image_url = _static_url(images[0]) if images else None
+        image_url = _static_url(images[0].image_url) if images else None
         # Resolve category/subcategory names
         cat_name = None
         subcat_name = None
@@ -91,7 +91,7 @@ async def list_products(db: AsyncSession = Depends(get_db)):
             image_url = _static_url(subcat_img)
         if not image_url and cat_img:
             image_url = _static_url(cat_img)
-        item = {
+        item: dict[str, Any] = {
             "id": pid,
             "name": row[1] or "Product",
             "description": row[2] or "",
@@ -108,7 +108,7 @@ async def list_products(db: AsyncSession = Depends(get_db)):
         items.append(item)
     return {"items": items}
 
-async def _get_product_detail(product_id: int, db: AsyncSession):
+async def _get_product_detail(product_id: int, db: AsyncSession) -> dict[str, dict[str, Any]]:
     image_repo = ProductImageRepository(db)
     cols = (
         Product.product_id,
@@ -126,7 +126,7 @@ async def _get_product_detail(product_id: int, db: AsyncSession):
         raise HTTPException(status_code=404, detail="Product not found")
     pid = row[0]
     images = await image_repo.get_by_product_id(pid)
-    image_url = _static_url(images[0]) if images else None
+    image_url = _static_url(images[0].image_url) if images and hasattr(images[0], 'image_url') else None
     cat_name = None
     subcat_name = None
     cat_img = None
@@ -145,7 +145,7 @@ async def _get_product_detail(product_id: int, db: AsyncSession):
         image_url = _static_url(subcat_img)
     if not image_url and cat_img:
         image_url = _static_url(cat_img)
-    item = {
+    item: dict[str, Any] = {
         "id": pid,
         "name": row[1] or "Product",
         "description": row[2] or "",
@@ -162,13 +162,13 @@ async def _get_product_detail(product_id: int, db: AsyncSession):
     return {"product": item}
 
 @catalog_router.get("/products/{product_id}")
-async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
+async def get_product(product_id: int, db: AsyncSession = Depends(get_db)) -> dict[str, dict[str, Any]]:
     """Public: product detail by id for browsing."""
     return await _get_product_detail(product_id, db)
 
 # Alias to match existing frontend path `/api/product/{id}`
 @public_router.get("/api/product/{product_id}")
-async def get_product_alias(product_id: int, db: AsyncSession = Depends(get_db)):
+async def get_product_alias(product_id: int, db: AsyncSession = Depends(get_db)) -> dict[str, dict[str, Any]]:
     return await _get_product_detail(product_id, db)
 
 
@@ -279,13 +279,13 @@ from sqlalchemy.orm import selectinload
 # Category/Subcategory endpoints for frontend pages
 # --------------------------------------------------
 @public_router.get("/api/categories")
-async def list_categories(db: AsyncSession = Depends(get_db)):
+async def list_categories(db: AsyncSession = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
     result = await db.execute(
         select(Category).options(selectinload(Category.subcategories))
     )
-    categories = []
+    categories: list[dict[str, Any]] = []
     for category in result.scalars().unique():
-        subs = [
+        subs: list[dict[str, Any]] = [
             {
                 "subcategory_id": sub.subcategory_id,
                 "name": sub.name or "",
@@ -302,13 +302,13 @@ async def list_categories(db: AsyncSession = Depends(get_db)):
     return {"categories": categories}
 
 @public_router.get("/api/category/{category_id}")
-async def get_category(category_id: int, db: AsyncSession = Depends(get_db)):
+async def get_category(category_id: int, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     row = (await db.execute(select(Category.category_id, Category.name, Category.image_url).filter(Category.category_id == category_id))).first()
     if not row:
         raise HTTPException(status_code=404, detail="Category not found")
     cid, name, img = row
     sub_rows = (await db.execute(select(Subcategory.subcategory_id, Subcategory.name, Subcategory.image_url).filter(Subcategory.category_id == cid))).all()
-    subs = [
+    subs: list[dict[str, Any]] = [
         {
             "subcategory_id": s_id,
             "name": s_name or "",

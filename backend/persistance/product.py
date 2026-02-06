@@ -7,9 +7,14 @@
 # seller. Tracks category, subcategory, pricing, status, and timestamps.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, Integer, BigInteger, String, Text, Numeric, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import Integer, BigInteger, String, Text, Numeric, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
+
 
 class Product(Base):
     """
@@ -32,15 +37,37 @@ class Product(Base):
     """
     __tablename__ = 'product'
     # Use Integer for SQLite autoincrement primary key behavior
-    product_id = Column(Integer, primary_key=True, autoincrement=True)
-    seller_id = Column(BigInteger, ForeignKey('users.user_id'))
-    category_id = Column(BigInteger, ForeignKey('category.category_id'))
-    subcategory_id = Column(BigInteger, ForeignKey('subcategory.subcategory_id'))
-    title = Column(String(255), nullable=False)
-    description = Column(Text)
-    price = Column(Numeric(10,2))
-    currency = Column(String(10))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    product_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    seller_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    category_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('category.category_id'))
+    subcategory_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('subcategory.subcategory_id'), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    price: Mapped[float] = mapped_column(Numeric(10,2))
+    currency: Mapped[str] = mapped_column(String(10))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Relationships (to be completed in related models)
+    
+    @property
+    def name(self) -> str:
+        """Compatibility alias used by services expecting `name`."""
+        return self.title
+    
+    @name.setter
+    def name(self, value: str) -> None:
+        """Allow setting name by updating title."""
+        self.title = value
+
+    # Provide a lightweight `stock` attribute for code that reads/writes it
+    # without changing the DB schema here. This uses a private attribute so
+    # it won't be persisted unless elsewhere mapped.
+    @property
+    def stock(self) -> int:
+        return getattr(self, '_stock', 0)
+
+    @stock.setter
+    def stock(self, value: int) -> None:
+        setattr(self, '_stock', value)

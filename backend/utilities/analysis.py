@@ -6,7 +6,9 @@
 # Provides daily, weekly, and monthly aggregation for reporting and dashboards.
 # ------------------------------------------------------------------------------
 
-def analyze_units_sold_trends(orders, period='daily'):
+from typing import List, Dict, Any
+
+def analyze_units_sold_trends(orders: List[Any], period: str = 'daily') -> Dict[str, Any]:
     """
     Analyze trends in units sold over a given period.
     Args:
@@ -16,7 +18,7 @@ def analyze_units_sold_trends(orders, period='daily'):
         dict: Trends, average per period, and original orders.
     """
     from collections import defaultdict
-    trends = defaultdict(int)
+    trends: 'defaultdict[Any, int]' = defaultdict(int)
     for order in orders:
         date = getattr(order, 'created_at', None)
         if not date:
@@ -36,7 +38,13 @@ def analyze_units_sold_trends(orders, period='daily'):
     avg = sum(trends.values()) / len(trends)
     return {'trends': dict(trends), 'average_per_period': avg, 'orders': orders}
 
-def analyze_revenue_profit_trends(orders, period='daily', fee_rate=0.1, shipping_cost=0, ad_cost=0):
+def analyze_revenue_profit_trends(
+    orders: List[Any],
+    period: str = 'daily',
+    fee_rate: float = 0.1,
+    shipping_cost: float = 0,
+    ad_cost: float = 0
+) -> Dict[str, Any]:
     """
     Analyze revenue and profit trends over a given period.
     Args:
@@ -49,8 +57,8 @@ def analyze_revenue_profit_trends(orders, period='daily', fee_rate=0.1, shipping
         dict: Revenue/profit trends, averages, and original orders.
     """
     from collections import defaultdict
-    revenue_trends = defaultdict(float)
-    profit_trends = defaultdict(float)
+    revenue_trends: 'defaultdict[Any, float]' = defaultdict(float)
+    profit_trends: 'defaultdict[Any, float]' = defaultdict(float)
     for order in orders:
         date = getattr(order, 'created_at', None)
         if not date:
@@ -78,7 +86,7 @@ def analyze_revenue_profit_trends(orders, period='daily', fee_rate=0.1, shipping
         'orders': orders
     }
 
-def analyze_order_count_trends(orders, period='daily'):
+def analyze_order_count_trends(orders: List[Any], period: str = 'daily') -> Dict[str, Any]:
     """
     Analyze order count trends over a given period.
     Args:
@@ -88,7 +96,7 @@ def analyze_order_count_trends(orders, period='daily'):
         dict: Order count trends, average per period, and original orders.
     """
     from collections import defaultdict
-    trends = defaultdict(int)
+    trends: 'defaultdict[Any, int]' = defaultdict(int)
     for order in orders:
         date = getattr(order, 'created_at', None)
         if not date:

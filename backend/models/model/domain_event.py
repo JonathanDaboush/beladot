@@ -21,5 +21,5 @@ class DomainEvent:
     event_type: DomainEventType
     entity_id: int
     actor: str
-    payload: Dict
+    payload: Dict[str, object]
     timestamp: Optional[datetime] = None

@@ -13,7 +13,7 @@ from cryptography.fernet import Fernet
 FERNET_KEY = os.environ.get('FERNET_KEY', Fernet.generate_key())
 fernet = Fernet(FERNET_KEY)
 
-def salt(text):
+def salt(text: str) -> str:
     """
     Encrypt (salt) the given text using Fernet symmetric encryption.
     Args:
@@ -23,7 +23,7 @@ def salt(text):
     """
     return fernet.encrypt(text.encode()).decode()
 
-def deSalt(salted_text):
+def deSalt(salted_text: str) -> str:
     """
     Decrypt (unsalt) the given salted text using Fernet symmetric encryption.
     Args:

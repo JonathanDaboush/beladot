@@ -7,9 +7,14 @@
 # by a user to a product. Tracks rating value and creation timestamp.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, Integer, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from typing import Optional
+import datetime
+from sqlalchemy import BigInteger, Integer, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
+
 
 class ProductRating(Base):
     """
@@ -25,9 +30,9 @@ class ProductRating(Base):
         # Relationships to related models are defined elsewhere.
     """
     __tablename__ = 'product_rating'
-    rating_id = Column(BigInteger, primary_key=True)
-    product_id = Column(BigInteger, ForeignKey('product.product_id'))
-    user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    rating = Column(Integer)
-    created_at = Column(DateTime)
+    rating_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    product_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('product.product_id'))
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.user_id'))
+    rating: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     # Relationships (to be completed in related models)

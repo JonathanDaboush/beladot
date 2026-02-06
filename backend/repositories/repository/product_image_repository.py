@@ -6,6 +6,7 @@
 # Provides async CRUD methods for product images and product-specific queries.
 # ------------------------------------------------------------------------------
 
+from typing import Optional, List
 from backend.persistance.product_image import ProductImage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,28 +20,28 @@ class ProductImageRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, image_id):
+    async def get_by_id(self, image_id: int) -> Optional[ProductImage]:
         """Retrieve a product image by its ID."""
         result = await self.db.execute(
             select(ProductImage).filter(ProductImage.image_id == image_id)
         )
         return result.scalars().first()
 
-    async def get_by_product_id(self, product_id):
-        """Retrieve all image URLs for a specific product as plain values."""
+    async def get_by_product_id(self, product_id: int) -> List[ProductImage]:
+        """Retrieve all product images for a specific product."""
         result = await self.db.execute(
-            select(ProductImage.image_url).filter(ProductImage.product_id == product_id)
+            select(ProductImage).filter(ProductImage.product_id == product_id)
         )
-        return [row[0] for row in result.all()]
+        return list(result.scalars().all())
 
-    async def save(self, image):
+    async def save(self, image: ProductImage) -> ProductImage:
         """Save a new product image to the database."""
         self.db.add(image)
         await self.db.commit()
         await self.db.refresh(image)
         return image
 
-    async def update(self, image_id, **kwargs):
+    async def update(self, image_id: int, **kwargs) -> Optional[ProductImage]:
         """Update an existing product image by ID with provided fields."""
         image = await self.get_by_id(image_id)
         if not image:
@@ -51,7 +52,7 @@ class ProductImageRepository:
         await self.db.commit()
         return image
 
-    async def delete(self, image_id):
+    async def delete(self, image_id: int) -> bool:
         """Delete a product image by its ID."""
         image = await self.get_by_id(image_id)
         if image:

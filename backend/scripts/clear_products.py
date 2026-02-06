@@ -1,7 +1,6 @@
-from sqlalchemy import delete
-## Removed ensure_sqlite_schema import; not needed for Postgres
-from backend.persistance.base import get_sessionmaker
 
+from sqlalchemy import delete
+from backend.persistance.async_base import AsyncSessionLocal
 # Import models with FKs to product that should be cleared first
 from backend.persistance.cart_item import CartItem
 from backend.persistance.wishlist_item import WishlistItem
@@ -16,14 +15,14 @@ from backend.persistance.product_variant import ProductVariant
 from backend.persistance.product import Product
 
 
-def main() -> None:
-    # No schema creation needed for Postgres
-    Session = get_sessionmaker()
-    with Session() as session:
-        # Helper to try delete and skip if table doesn't exist
-        def try_delete(model):
+
+import asyncio
+
+async def main() -> None:
+    async with AsyncSessionLocal() as session:
+        async def try_delete(model):
             try:
-                session.execute(delete(model))
+                await session.execute(delete(model))
             except Exception as e:
                 if 'does not exist' in str(e) or 'UndefinedTable' in str(e):
                     print(f"Skipping missing table: {getattr(model, '__tablename__', model)}")
@@ -31,20 +30,19 @@ def main() -> None:
                     raise
 
         # Delete dependents first to satisfy FKs
-        try_delete(CartItem)
-        try_delete(WishlistItem)
-        try_delete(ShipmentItem)
-        try_delete(OrderItem)
-        try_delete(ProductComment)
-        try_delete(ProductVariantImage)
-        try_delete(ProductImage)
-        try_delete(ProductReview)
-        try_delete(ProductRating)
-        try_delete(ProductVariant)
-        try_delete(Product)
-        session.commit()
+        await try_delete(CartItem)
+        await try_delete(WishlistItem)
+        await try_delete(ShipmentItem)
+        await try_delete(OrderItem)
+        await try_delete(ProductComment)
+        await try_delete(ProductVariantImage)
+        await try_delete(ProductImage)
+        await try_delete(ProductReview)
+        await try_delete(ProductRating)
+        await try_delete(ProductVariant)
+        await try_delete(Product)
+        await session.commit()
     print("Purged all products and related records.")
 
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

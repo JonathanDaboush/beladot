@@ -9,7 +9,11 @@
 # the repository and service layers for CRUD operations.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, Integer, String
+from __future__ import annotations
+
+from typing import Any
+from sqlalchemy import Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 from backend.db.base import Base
 
 class CustomerComponent(Base):
@@ -23,6 +27,6 @@ class CustomerComponent(Base):
         description (String): Textual description of the component.
     """
     __tablename__ = 'customer_component'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    img_url = Column(String(255), nullable=False)
-    description = Column(String(255), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    img_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)

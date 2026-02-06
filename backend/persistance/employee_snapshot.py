@@ -8,7 +8,11 @@
 # auditing purposes.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, String
+from __future__ import annotations
+
+from typing import Optional
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from backend.db.base import Base
 
 class EmployeeSnapshot(Base):
@@ -23,7 +27,7 @@ class EmployeeSnapshot(Base):
         approved_by_name (String): Name of the person who approved the snapshot.
     """
     __tablename__ = 'employee_snapshot'
-    full_name = Column(String(255), primary_key=True)
-    department_name = Column(String(100))
-    role = Column(String(50))
-    approved_by_name = Column(String(255))
+    full_name: Mapped[str] = mapped_column(String(255), primary_key=True)
+    department_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    approved_by_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

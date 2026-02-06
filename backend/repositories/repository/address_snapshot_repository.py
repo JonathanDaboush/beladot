@@ -6,6 +6,7 @@
 # Provides async methods for retrieving address snapshots by order number.
 # ------------------------------------------------------------------------------
 
+from typing import Optional
 from backend.persistance.address_snapshot import AddressSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -19,7 +20,7 @@ class AddressSnapshotRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, order_number):
+    async def get_by_id(self, order_number: str) -> Optional[AddressSnapshot]:
         """Retrieve an AddressSnapshot by order number."""
         result = await self.db.execute(
             select(AddressSnapshot).filter(AddressSnapshot.order_number == order_number)

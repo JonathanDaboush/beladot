@@ -1,3 +1,5 @@
+# For forward references in type annotations
+from __future__ import annotations
 
 # ------------------------------------------------------------------------------
 # category.py
@@ -8,8 +10,13 @@
 # subcategories and products are defined elsewhere.
 # ------------------------------------------------------------------------------
 
-from sqlalchemy import Column, BigInteger, String
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from typing import List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .subcategory import Subcategory
+from sqlalchemy import BigInteger, String
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .base import Base
 
 class Category(Base):
@@ -24,10 +31,10 @@ class Category(Base):
         # Relationships to subcategories and products are defined elsewhere.
     """
     __tablename__ = 'category'
-    category_id = Column(BigInteger, primary_key=True)
-    name = Column(String(100), nullable=False)
-    image_url = Column(String(255), nullable=True)
-    subcategories = relationship(
+    category_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    subcategories: Mapped[List['Subcategory']] = relationship(
         "Subcategory",
         back_populates="category",
         cascade="all, delete-orphan",

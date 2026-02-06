@@ -9,8 +9,9 @@ FastAPI-compatible implementation.
 from functools import wraps
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from typing import Any, Optional
 
-async def get_employee_department(employee_repo, employee_id):
+async def get_employee_department(employee_repo: Any, employee_id: int) -> Optional[int]:
     """
     Retrieve the department ID for a given employee.
     Args:
@@ -35,7 +36,7 @@ def manager_department_required(employee_repo):
     """
     def decorator(f):
         @wraps(f)
-        async def wrapper(request: Request, *args, **kwargs):
+        async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
             identity = getattr(request.state, 'identity', None)
             if not identity:
                 return JSONResponse({'error': 'Unauthorized'}, status_code=401)
@@ -45,7 +46,12 @@ def manager_department_required(employee_repo):
             data = None
             try:
                 data = await request.json()
-            except Exception:
+            except Exception as e:
+                try:
+                    from backend.infrastructure.structured_logging import logger
+                    logger.debug("role_enforcement.request_json_failed", error=str(e))
+                except Exception:
+                    pass
                 # Fallback to explicit dict passed in kwargs
                 data = kwargs.get('data')
             employee_id = (data.get('employee_id') if isinstance(data, dict) else None) or kwargs.get('employee_id')

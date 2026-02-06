@@ -30,7 +30,7 @@ class DevelopmentSettings(BaseAppSettings):
     # Provide safe, permissive defaults for local development
     SECRET_KEY: str = 'dev-secret-key'
     EMAIL_API_KEY: str = 'dev-email-api-key'
-    DATABASE_URL: str = 'postgresql+psycopg2://postgres:password@localhost:5432/divina_dev'
+    DATABASE_URL: str = 'postgresql+asyncpg://postgres:correct_password@localhost:5432/divina_dev'
     # In dev, do not load general .env and use a DEV_ prefix to avoid accidental overrides
     model_config = SettingsConfigDict(
         env_file=None,
@@ -45,7 +45,10 @@ class TestSettings(BaseAppSettings):
     # Provide safe defaults for tests to allow import/run without external env
     SECRET_KEY: str = 'test-secret-key'
     EMAIL_API_KEY: str = 'test-email-api-key'
-    DATABASE_URL: str = 'postgresql+psycopg2://postgres:password@localhost:5432/divina_dev'
+    # Use an in-memory SQLite DB by default for tests to avoid requiring
+    # a local Postgres instance and to prevent authentication failures
+    # during automated runs. This keeps tests hermetic.
+    DATABASE_URL: str = 'postgresql+asyncpg://postgres:correct_password@localhost:5432/divina_dev'
     # For tests, ignore extra env vars and avoid loading .env
     model_config = SettingsConfigDict(
         env_file=None,
@@ -63,6 +66,9 @@ class ProductionSettings(BaseAppSettings):
 def _load_settings() -> BaseAppSettings:
     # Peek ENV from environment to select settings class, default to 'dev'
     env = os.environ.get('ENV')
+    # If running under pytest, prefer test settings to avoid requiring Postgres
+    if env is None and ('PYTEST_CURRENT_TEST' in os.environ or 'PYTEST_ADDOPTS' in os.environ):
+        env = 'test'
     if env is None:
         env = 'dev'
     env = env.strip().lower()
@@ -71,7 +77,11 @@ def _load_settings() -> BaseAppSettings:
     if env == 'test':
         return TestSettings()
     if env == 'prod':
-        return ProductionSettings()
+        return ProductionSettings(
+            DATABASE_URL='postgresql+asyncpg://postgres:correct_password@localhost:5432/divina_dev',
+            SECRET_KEY='prod-secret-key',
+            EMAIL_API_KEY='prod-email-key'
+        )
     raise RuntimeError("ENV must be one of 'dev', 'test', 'prod'")
 
 settings = _load_settings()

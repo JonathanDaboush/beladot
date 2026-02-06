@@ -19,7 +19,7 @@ class EmployeePaymentRepository:
         """Initialize repository with async DB session."""
         self.db = db
 
-    async def get_by_id(self, payment_id):
+    async def get_by_id(self, payment_id: int) -> EmployeePayment | None:
         """Retrieve an employee payment by its ID."""
         result = await self.db.execute(
             select(EmployeePayment).filter(EmployeePayment.payment_id == payment_id)

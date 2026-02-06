@@ -1,4 +1,5 @@
 from backend.utilities.emailService import generate_email
+from backend.infrastructure.structured_logging import logger
 
 
 """
@@ -67,7 +68,11 @@ async def send_customer_refund_status_email(customer_email, customer_name, order
     try:
         from backend.config import settings
         is_test_env = getattr(settings, 'ENV', '').lower() == 'test'
-    except Exception:
+    except Exception as e:
+        try:
+            logger.debug("customerAssistance.config_load_failed", error=str(e))
+        except Exception:
+            pass
         is_test_env = False
     template_path = os.path.join(os.path.dirname(__file__), '../htmlpages', pagePath)
     html_content = ''
@@ -82,7 +87,11 @@ async def send_customer_refund_status_email(customer_email, customer_name, order
         html_content = html_content.replace('{{ description }}', str(description or ''))
     try:
         generate_email(customer_email, subject, pagePath)
-    except Exception:
+    except Exception as e:
+        try:
+            logger.exception("customerAssistance.email_failed", to=customer_email, subject=subject, error=str(e))
+        except Exception:
+            pass
         # Email errors should not fail API in tests
         pass
     return True

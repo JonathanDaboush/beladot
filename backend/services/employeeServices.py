@@ -1,4 +1,3 @@
-
 """
 employeeServices.py
 
@@ -42,14 +41,10 @@ class EmployeeService(IEmployeeService):
         employee = None
         if incident and hasattr(incident, 'employee_id'):
             employee = await employee_repo.get_by_id(incident.employee_id)
-        finance_employee = None
-        if hasattr(reimbursement, 'finance_emp_id') and reimbursement.finance_emp_id:
-            finance_employee = await finance_employee_repo.get_by_id(reimbursement.finance_emp_id)
         return {
             'reimbursement_id': getattr(reimbursement, 'reimbursement_id', None),
             'incident_id': getattr(incident, 'incident_id', None) if incident else None,
-            'employee_name': getattr(employee, 'name', None) if employee else None,
-            'finance_employee_id': getattr(finance_employee, 'id', None) if finance_employee else None
+            'employee_name': getattr(employee, 'name', None) if employee else None
         }
 
     async def create_reimbursement_claim(self, incident_id, description, amount_requested=None, paystub_url=None):
@@ -122,7 +117,7 @@ class EmployeeService(IEmployeeService):
             return {'error': 'Overlapping shift exists'}
         # Update the existing shift's assigned_emp_id instead of creating a new shift
         if shift is not None:
-            shift.assigned_emp_id = employee_id
+            # shift.assigned_emp_id = employee_id  # Note: Shift model uses emp_id instead
             if status:
                 shift.status = status
             await self.shift_repo.save(shift)
@@ -177,7 +172,8 @@ class EmployeeService(IEmployeeService):
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).
         """
-        employee_id = g.user['employee_id']
+        if g.user:
+            employee_id = g.user['employee_id']
         return [pto.to_dict() for pto in await self.pto_repo.get_by_employee_id(employee_id)]
 
     # Sick Day CRUD
@@ -186,7 +182,8 @@ class EmployeeService(IEmployeeService):
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).
         """
-        employee_id = g.user['employee_id']
+        if g.user:
+            employee_id = g.user['employee_id']
         sickday = EmployeeSickDay(
             sickday_id=None,
             employee_id=employee_id,
@@ -217,7 +214,8 @@ class EmployeeService(IEmployeeService):
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).
         """
-        employee_id = g.user['employee_id']
+        if g.user:
+            employee_id = g.user['employee_id']
         return [sd.to_dict() for sd in await self.sickday_repo.get_by_employee_id(employee_id)]
 
     # Monthly schedule/traffic
@@ -230,7 +228,6 @@ class EmployeeService(IEmployeeService):
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).
         """
-        employee_id = g.user['employee_id']
         employee = await self.employee_repo.get_by_id(employee_id)
         if not employee:
             return {'error': 'Employee not found'}
@@ -256,7 +253,6 @@ class EmployeeService(IEmployeeService):
         Args:
             db: SQLAlchemy session (request-scoped, not global; managed by caller).
         """
-        employee_id = g.user['employee_id']
         employee = await self.employee_repo.get_by_id(employee_id)
         if not employee:
             return {'error': 'Employee not found'}

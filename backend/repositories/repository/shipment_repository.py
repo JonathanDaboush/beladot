@@ -11,6 +11,7 @@ Repository class for managing Shipment entities in the database.
 Provides async CRUD operations for shipments.
 """
 
+from typing import Optional
 from backend.persistance.shipment import Shipment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,7 +25,7 @@ class ShipmentRepository:
         """
         self.db = db
 
-    async def get_by_id(self, shipment_id):
+    async def get_by_id(self, shipment_id: int) -> Optional[Shipment]:
         """
         Retrieve a shipment by its ID.
         Args:
@@ -37,7 +38,7 @@ class ShipmentRepository:
         )
         return result.scalars().first()
 
-    async def save(self, shipment):
+    async def save(self, shipment: Shipment) -> Shipment:
         """
         Save a new shipment to the database.
         Args:
@@ -50,7 +51,7 @@ class ShipmentRepository:
         await self.db.refresh(shipment)
         return shipment
 
-    async def update(self, shipment_id, **kwargs):
+    async def update(self, shipment_id: int, **kwargs) -> Optional[Shipment]:
         """
         Update a shipment by ID.
         Args:
@@ -68,7 +69,7 @@ class ShipmentRepository:
         await self.db.commit()
         return shipment
 
-    async def delete(self, shipment_id):
+    async def delete(self, shipment_id: int) -> bool:
         """
         Delete a shipment by ID.
         Args:

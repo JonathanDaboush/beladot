@@ -9,6 +9,26 @@ class BaseRepository(ABC, Generic[T, ID]):
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    async def soft_delete(self, obj: T) -> None:
+        """Perform a soft-delete if the model has `is_deleted`, otherwise hard-delete."""
+        if hasattr(obj, "is_deleted"):
+            setattr(obj, "is_deleted", True)
+            await self.session.commit()
+            return
+        if hasattr(obj, "deleted"):
+            setattr(obj, "deleted", True)
+            await self.session.commit()
+            return
+        # Fallback to hard delete when model doesn't have a soft-delete column
+        await self.session.delete(obj)
+        await self.session.commit()
+
+    def apply_whitelist_update(self, target: T, source: T, whitelist: set[str]) -> None:
+        """Copy only whitelisted attributes from source to target."""
+        for field in whitelist:
+            if hasattr(source, field) and hasattr(target, field):
+                setattr(target, field, getattr(source, field))
+
     # Defensive pagination guard
     @staticmethod
     def validate_pagination(limit: int = 100, offset: int = 0) -> None:

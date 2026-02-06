@@ -14,14 +14,15 @@ from backend.schemas.schemas_auth import (
 
 router = APIRouter(prefix="/api/v1", tags=["user"])
 
-async def require_identity(request: Request):
+from typing import Any
+async def require_identity(request: Request) -> dict[str, Any]:
     identity = getattr(request.state, "identity", {})
     if not identity or not identity.get("id"):
         raise HTTPException(status_code=401, detail="Unauthorized")
     return identity
 
 @router.post("/public/register")
-async def register_user(payload: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register_user(payload: UserRegisterRequest, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     # Uniqueness check on email
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalars().first():
@@ -68,7 +69,11 @@ async def register_user(payload: UserRegisterRequest, db: AsyncSession = Depends
     return {"user_id": u.user_id, "email": u.email, "status": u.account_status}
 
 @router.put("/user/profile")
-async def update_profile(payload: UserUpdateRequest, identity=Depends(require_identity), db: AsyncSession = Depends(get_db)):
+async def update_profile(
+    payload: UserUpdateRequest,
+    identity: dict[str, Any] = Depends(require_identity),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
     # Disallow password or ID changes via this endpoint
     forbidden_keys = {"password", "user_id", "finance_id", "shipment_id"}
     for k in forbidden_keys:
@@ -114,7 +119,11 @@ async def update_profile(payload: UserUpdateRequest, identity=Depends(require_id
     return {"updated": True}
 
 @router.post("/user/upgrade-to-seller")
-async def upgrade_to_seller(payload: SellerUpgradeRequest, identity=Depends(require_identity), db: AsyncSession = Depends(get_db)):
+async def upgrade_to_seller(
+    payload: SellerUpgradeRequest,
+    identity: dict[str, Any] = Depends(require_identity),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
     # Create/update a seller snapshot to persist required seller fields
     # Upsert by store_name (primary key) to avoid duplicate key errors
     snap = await db.execute(select(SellerSnapshot).where(SellerSnapshot.store_name == payload.store_name))
