@@ -39,7 +39,7 @@ from .manager import Manager
 from .shift import Shift
 from .employee_payment import EmployeePayment
 from .employee_pto import EmployeePTO
-from .employee_sickday import EmployeeSickday
+from .employee_sickday import EmployeeSickDay
 
 # Snapshots
 from .address_snapshot import AddressSnapshot
@@ -48,7 +48,7 @@ from .user_snapshot import UserSnapshot
 from .payment_snapshot import PaymentSnapshot
 from .paystub_snapshot import PaystubSnapshot
 from .pto_snapshot import PTOSnapshot
-from .sickday_snapshot import SickdaySnapshot
+from .sickday_snapshot import SickDaySnapshot
 from .seller_snapshot import SellerSnapshot
 from .shipping_snapshot import ShippingSnapshot
 from .refund_snapshot import RefundSnapshot
@@ -73,9 +73,9 @@ from .refund import Refund
 from .refund_request import RefundRequest
 from .refund_ledger import RefundLedger
 from .reimbursement import Reimbursement
-from .ledger import Ledger
+from .ledger import LedgerEntry
 from .seller_payout import SellerPayout
-from .sellers_expense import SellersExpense
+from .sellers_expense import SellerExpense
 from .finance_employee import FinanceEmployee
 from .user_finance import UserFinance
 

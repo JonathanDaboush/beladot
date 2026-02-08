@@ -102,7 +102,9 @@ async def create_manager(session, user_id: int, department_id: int) -> Manager:
     if existing:
         return existing
     manager_id = await _next_pk(session, Manager, Manager.manager_id)
-    now = datetime.now(UTC)
+    # Strip timezone for TIMESTAMP WITHOUT TIME ZONE columns
+    # If columns are ever changed to TIMESTAMP WITH TIME ZONE, remove .replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     m = Manager(
         manager_id=manager_id,
         user_id=user_id,
@@ -124,7 +126,9 @@ async def create_finance_employee(session, emp: Employee) -> FinanceEmployee:
     if existing:
         return existing
     fe_id = await _next_pk(session, FinanceEmployee, FinanceEmployee.finance_emp_id)
-    now = datetime.now(UTC)
+    # Strip timezone for TIMESTAMP WITHOUT TIME ZONE columns
+    # If columns are ever changed to TIMESTAMP WITH TIME ZONE, remove .replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     fe = FinanceEmployee(
         finance_emp_id=fe_id,
         emp_id=emp.emp_id,
