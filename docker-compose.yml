@@ -39,12 +39,15 @@ services:
     depends_on:
       - backend
 
+  # PostgreSQL database for LIVE/DEVELOPMENT server
+  # Database: divina_dev (for running the actual application)
+  # Tests use divina_test database (create manually if needed for Postgres-based tests)
   postgres:
     image: postgres:15-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=divina_dev
+      - POSTGRES_DB=divina_dev  # Live server database
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:

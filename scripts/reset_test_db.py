@@ -8,7 +8,7 @@ import os
 from sqlalchemy import create_engine, text
 
 # Update these values for your environment
-POSTGRES_URL = os.environ.get("TEST_DATABASE_URL", "postgresql+psycopg2://postgres:your_actual_password@localhost:5432/divina_dev")
+POSTGRES_URL = os.environ.get("TEST_DATABASE_URL", "postgresql+psycopg2://postgres:password@localhost:5432/divina_test")
 SQLITE_URL = "sqlite:///test.db"
 
 # Choose which DB to reset

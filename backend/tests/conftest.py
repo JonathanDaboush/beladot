@@ -14,12 +14,15 @@ sys.path.insert(
 # ---------------------------------------------------------------
 # Set test database URL BEFORE importing backend
 # ---------------------------------------------------------------
-# Default test database to in-memory SQLite to avoid local Postgres auth
-# issues during CI/dev runs. Override by setting `DATABASE_URL` in the
-# environment if Postgres is available and desired.
-# Force tests to use a local in-memory DB unless `TEST_DATABASE_URL` is set.
-# This ensures CI/dev runs don't attempt to use a local Postgres instance
-# with potentially mismatched credentials.
+# IMPORTANT: Tests use SQLite in-memory by default to avoid conflicts
+# with the live divina_dev database used by docker-compose.
+# 
+# Database separation:
+# - divina_dev  = Live/development server (docker-compose)
+# - divina_test = Testing database (for Postgres-based tests)
+#
+# To use Postgres for tests, set TEST_DATABASE_URL:
+#   export TEST_DATABASE_URL="postgresql+asyncpg://postgres:password@localhost:5432/divina_test"
 sqlite_url = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ["IGNORE_DATABASE_URL"] = sqlite_url
 os.environ.setdefault("TEST_DATABASE_URL", sqlite_url)

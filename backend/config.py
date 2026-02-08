@@ -28,9 +28,10 @@ class BaseAppSettings(BaseSettings):
 class DevelopmentSettings(BaseAppSettings):
     ENV: EnvLiteral = 'dev'
     # Provide safe, permissive defaults for local development
+    # For live server via docker-compose, use divina_dev database
     SECRET_KEY: str = 'dev-secret-key'
     EMAIL_API_KEY: str = 'dev-email-api-key'
-    DATABASE_URL: str = 'postgresql+asyncpg://postgres:correct_password@localhost:5432/divina_dev'
+    DATABASE_URL: str = 'postgresql+asyncpg://postgres:password@localhost:5432/divina_dev'
     # In dev, do not load general .env and use a DEV_ prefix to avoid accidental overrides
     model_config = SettingsConfigDict(
         env_file=None,
@@ -45,10 +46,10 @@ class TestSettings(BaseAppSettings):
     # Provide safe defaults for tests to allow import/run without external env
     SECRET_KEY: str = 'test-secret-key'
     EMAIL_API_KEY: str = 'test-email-api-key'
-    # Use an in-memory SQLite DB by default for tests to avoid requiring
-    # a local Postgres instance and to prevent authentication failures
-    # during automated runs. This keeps tests hermetic.
-    DATABASE_URL: str = 'postgresql+asyncpg://postgres:correct_password@localhost:5432/divina_dev'
+    # Use divina_test database for Postgres-based tests
+    # Tests use SQLite in-memory by default (see conftest.py)
+    # Set TEST_DATABASE_URL to use this Postgres test database instead
+    DATABASE_URL: str = 'postgresql+asyncpg://postgres:password@localhost:5432/divina_test'
     # For tests, ignore extra env vars and avoid loading .env
     model_config = SettingsConfigDict(
         env_file=None,
