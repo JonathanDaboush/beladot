@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-conn = psycopg2.connect(dbname='divina_dev', user='postgres', password='postgres', host='localhost', port=5433)
+conn = psycopg2.connect(dbname='divina_dev', user='postgres', password='password', host='localhost', port=5432)
 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 cur = conn.cursor()
 

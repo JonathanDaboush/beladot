@@ -286,17 +286,18 @@ def create_app():
                     logger.exception("app.bootstrap_failed", error=str(e))
                 except Exception:
                     pass
-        # Optional migration check (silent in tests)
-        try:
-            from alembic.config import Config
-            from alembic import command
-            config = Config("alembic.ini")
-            _ = command.current(config, verbose=False)
-        except Exception as e:
-            try:
-                logger.exception("app.alembic_check_failed", error=str(e))
-            except Exception:
-                pass
+        # Alembic check disabled in Docker (alembic.ini uses localhost which doesn't work in containers)
+        # Migrations should be run manually via: docker exec container alembic upgrade head
+        # try:
+        #     from alembic.config import Config
+        #     from alembic import command
+        #     config = Config("alembic.ini")
+        #     _ = command.current(config, verbose=False)
+        # except Exception as e:
+        #     try:
+        #         logger.exception("app.alembic_check_failed", error=str(e))
+        #     except Exception:
+        #         pass
         yield
         # Shutdown
         logger.info("Shutting down: flushing logs, closing DB pool, stopping workers.")
